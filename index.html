@@ -171,6 +171,39 @@
   /* ── BADGE (pill) ── */
   .badge { padding: 4px 12px; border-radius: 40px; font-size: .73rem; font-weight: 600; display: inline-block; }
   .badge-outline { background: transparent; border: 1px solid var(--border); color: var(--text2); }
+
+  /* LOGIN */
+  .login-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: linear-gradient(135deg, var(--green-dark) 0%, #0f2b1f 100%);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .login-card {
+    background: #fff; border-radius: 20px; padding: 40px 36px;
+    width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,.3);
+  }
+  .login-logo {
+    text-align: center; margin-bottom: 28px;
+  }
+  .login-logo-icon {
+    width: 56px; height: 56px; background: var(--coral); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;
+  }
+  .login-logo-name { font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 700; color: var(--green-dark); line-height: 1.2; }
+  .login-logo-sub  { font-size: .78rem; color: var(--text2); margin-top: 2px; }
+  .login-card .form-group { margin-bottom: 16px; }
+  .login-card label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-bottom: 6px; display: block; }
+  .login-card input { width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: .93rem; box-sizing: border-box; transition: border-color .15s; }
+  .login-card input:focus { outline: none; border-color: var(--green-mid); }
+  .login-btn { width: 100%; padding: 13px; background: var(--green-dark); color: #fff; border: none; border-radius: 10px; font-size: .95rem; font-weight: 700; cursor: pointer; margin-top: 4px; transition: background .15s; }
+  .login-btn:hover { background: var(--green-mid); }
+  .login-erro { color: var(--danger); font-size: .82rem; text-align: center; margin-top: 10px; min-height: 18px; }
+  .login-setup-link { text-align: center; margin-top: 16px; font-size: .8rem; color: var(--text2); }
+  .sidebar-user { padding: 12px 16px; border-top: 1px solid rgba(255,255,255,.1); margin-top: auto; }
+  .sidebar-user-name { font-size: .82rem; font-weight: 700; color: #fff; }
+  .sidebar-user-role { font-size: .72rem; color: rgba(255,255,255,.55); margin-top: 1px; }
+  .sidebar-user-logout { margin-top: 8px; width: 100%; padding: 7px; background: rgba(255,255,255,.08); border: none; border-radius: 8px; color: rgba(255,255,255,.7); font-size: .78rem; cursor: pointer; transition: background .15s; }
+  .sidebar-user-logout:hover { background: rgba(255,255,255,.18); }
   .celula-col { background: var(--bg2); border-radius: var(--radius); padding: 14px 12px; }
   .celula-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); transition: all .15s; }
   .badge-purple { background: #EDE8FF; color: #5B4FCF; }
@@ -484,7 +517,61 @@
   <div class="nav-item" onclick="nav('financeiro')">
     <span class="nav-icon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></span><span>Financeiro</span>
   </div>
+  <div class="nav-item" id="nav-usuarios" onclick="nav('usuarios')" style="display:none">
+    <span class="nav-icon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></span><span>Usuários</span>
+  </div>
+  <div class="sidebar-user" id="sidebar-user-info" style="display:none">
+    <div class="sidebar-user-name" id="sidebar-user-name"></div>
+    <div class="sidebar-user-role" id="sidebar-user-role"></div>
+    <button class="sidebar-user-logout" onclick="logout()">Sair da conta</button>
+  </div>
 </nav>
+
+<!-- LOGIN OVERLAY -->
+<div id="login-overlay" class="login-overlay">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="2" x2="12" y2="22"/><line x1="5" y1="8" x2="19" y2="8"/></svg>
+      </div>
+      <div class="login-logo-name">CC-Campo do Coelho</div>
+      <div class="login-logo-sub">Sistema de Gestão</div>
+    </div>
+    <div id="login-form-wrap">
+      <div class="form-group">
+        <label>Usuário</label>
+        <input type="text" id="login-user" placeholder="seu.usuario" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div class="form-group">
+        <label>Senha</label>
+        <input type="password" id="login-senha" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="login-btn" onclick="doLogin()">Entrar</button>
+      <div class="login-erro" id="login-erro"></div>
+    </div>
+    <div id="setup-form-wrap" style="display:none">
+      <div style="text-align:center;margin-bottom:20px;font-size:.9rem;color:var(--text2)">Primeira vez? Crie a conta de administrador.</div>
+      <div class="form-group">
+        <label>Nome completo</label>
+        <input type="text" id="setup-nome" placeholder="Ex: Pastor João">
+      </div>
+      <div class="form-group">
+        <label>Usuário</label>
+        <input type="text" id="setup-user" placeholder="Ex: pastor.joao">
+      </div>
+      <div class="form-group">
+        <label>Senha</label>
+        <input type="password" id="setup-senha" placeholder="Mínimo 6 caracteres">
+      </div>
+      <div class="form-group">
+        <label>Confirmar senha</label>
+        <input type="password" id="setup-senha2" placeholder="Repita a senha">
+      </div>
+      <button class="login-btn" onclick="doSetup()">Criar conta admin</button>
+      <div class="login-erro" id="setup-erro"></div>
+    </div>
+  </div>
+</div>
 
 <!-- MAIN -->
 <main class="main">
@@ -834,6 +921,9 @@
 
   <!-- PAGE CÉLULAS -->
   <div id="page-celulas" class="page"></div>
+
+  <!-- PAGE USUÁRIOS -->
+  <div id="page-usuarios" class="page"></div>
 
 </main>
 
@@ -1443,6 +1533,7 @@ let state = {
   programacao: [],
   celulas: [],
   financeiro: [],
+  usuarios: [],
   memberFilter: 'all'
 };
 
@@ -1512,6 +1603,7 @@ function load() {
   if (!state.playlists) state.playlists = [];
   if (!state.programacao) state.programacao = [];
   if (!state.celulas) state.celulas = [];
+  if (!state.usuarios) state.usuarios = [];
   if (!state.members.length) seedDemo();
 }
 
@@ -1583,6 +1675,7 @@ function render() {
   if (currentPage === 'musicos') renderMusicos();
   if (currentPage === 'programacao') renderProgramacao();
   if (currentPage === 'celulas') renderCelulas();
+  if (currentPage === 'usuarios') renderUsuarios();
 }
 
 function updateStats() {
@@ -4038,10 +4131,334 @@ function deleteCelula(id) {
   save(); renderCelulas();
 }
 
+// ========== AUTH ==========
+
+let currentUser = null;
+
+const PERFIL_LABEL = { admin: 'Administrador', lider: 'Líder', visitante: 'Visitante' };
+
+async function hashSenha(s) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function checkAuth() {
+  const sess = sessionStorage.getItem('igreja_session');
+  if (sess) {
+    try {
+      currentUser = JSON.parse(sess);
+      showApp();
+      return;
+    } catch(e) {}
+  }
+  // Not logged in
+  if (!state.usuarios.length) {
+    document.getElementById('login-form-wrap').style.display = 'none';
+    document.getElementById('setup-form-wrap').style.display = '';
+  }
+  document.getElementById('login-overlay').style.display = 'flex';
+}
+
+function showApp() {
+  document.getElementById('login-overlay').style.display = 'none';
+  // Show user info in sidebar
+  const info = document.getElementById('sidebar-user-info');
+  if (info) {
+    info.style.display = '';
+    document.getElementById('sidebar-user-name').textContent = currentUser.nome;
+    document.getElementById('sidebar-user-role').textContent = PERFIL_LABEL[currentUser.perfil] || currentUser.perfil;
+  }
+  // Show/hide Usuários nav item
+  const navU = document.getElementById('nav-usuarios');
+  if (navU) navU.style.display = currentUser.perfil === 'admin' ? '' : 'none';
+  render();
+}
+
+async function doLogin() {
+  const user = document.getElementById('login-user').value.trim();
+  const senha = document.getElementById('login-senha').value;
+  const erro = document.getElementById('login-erro');
+  erro.textContent = '';
+  if (!user || !senha) { erro.textContent = 'Preencha usuário e senha.'; return; }
+  const hash = await hashSenha(senha);
+  const u = state.usuarios.find(u => u.usuario === user && u.senhaHash === hash && u.ativo !== false);
+  if (!u) { erro.textContent = 'Usuário ou senha incorretos.'; return; }
+  currentUser = { id: u.id, nome: u.nome, usuario: u.usuario, perfil: u.perfil };
+  sessionStorage.setItem('igreja_session', JSON.stringify(currentUser));
+  showApp();
+}
+
+async function doSetup() {
+  const nome  = document.getElementById('setup-nome').value.trim();
+  const user  = document.getElementById('setup-user').value.trim();
+  const senha = document.getElementById('setup-senha').value;
+  const senha2= document.getElementById('setup-senha2').value;
+  const erro  = document.getElementById('setup-erro');
+  erro.textContent = '';
+  if (!nome || !user || !senha) { erro.textContent = 'Preencha todos os campos.'; return; }
+  if (senha.length < 6) { erro.textContent = 'Senha deve ter ao menos 6 caracteres.'; return; }
+  if (senha !== senha2) { erro.textContent = 'As senhas não coincidem.'; return; }
+  const hash = await hashSenha(senha);
+  state.usuarios.push({ id: uid(), nome, usuario: user, senhaHash: hash, perfil: 'admin', ativo: true });
+  save();
+  document.getElementById('setup-form-wrap').style.display = 'none';
+  document.getElementById('login-form-wrap').style.display = '';
+  document.getElementById('login-user').value = user;
+  document.getElementById('login-erro').textContent = 'Conta criada! Faça login.';
+}
+
+function logout() {
+  sessionStorage.removeItem('igreja_session');
+  currentUser = null;
+  document.getElementById('sidebar-user-info').style.display = 'none';
+  document.getElementById('nav-usuarios').style.display = 'none';
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-senha').value = '';
+  document.getElementById('login-erro').textContent = '';
+  document.getElementById('login-overlay').style.display = 'flex';
+}
+
+function isAdmin() { return currentUser && currentUser.perfil === 'admin'; }
+function canEdit() { return currentUser && (currentUser.perfil === 'admin' || currentUser.perfil === 'lider'); }
+function canDelete() { return currentUser && currentUser.perfil === 'admin'; }
+
+// ========== USUÁRIOS ==========
+
+function renderUsuarios() {
+  if (!isAdmin()) { nav('dashboard'); return; }
+  const el = document.getElementById('page-usuarios');
+  if (!el) return;
+  const usuarios = state.usuarios;
+  el.innerHTML = `
+    <div class="page-header">
+      <div class="page-title">Usuários e Permissões</div>
+      <button class="btn btn-primary" onclick="openModalUsuario()">+ Novo Usuário</button>
+    </div>
+    <div class="card" style="overflow:hidden;padding:0">
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr style="background:var(--bg2)">
+            <th style="padding:12px 16px;text-align:left;font-size:.8rem;color:var(--text2);font-weight:600">Nome</th>
+            <th style="padding:12px 16px;text-align:left;font-size:.8rem;color:var(--text2);font-weight:600">Usuário</th>
+            <th style="padding:12px 16px;text-align:left;font-size:.8rem;color:var(--text2);font-weight:600">Perfil</th>
+            <th style="padding:12px 16px;text-align:left;font-size:.8rem;color:var(--text2);font-weight:600">Status</th>
+            <th style="padding:12px 16px;text-align:right;font-size:.8rem;color:var(--text2);font-weight:600">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${usuarios.map((u, i) => {
+            const perfilColor = { admin: 'var(--coral)', lider: 'var(--green-mid)', visitante: 'var(--info)' }[u.perfil] || 'var(--text2)';
+            return `<tr style="border-top:1px solid var(--border-light);background:${i%2===0?'#fff':'var(--bg2)'}">
+              <td style="padding:12px 16px;font-weight:600">${u.nome}</td>
+              <td style="padding:12px 16px;color:var(--text2);font-family:monospace;font-size:.88rem">${u.usuario}</td>
+              <td style="padding:12px 16px">
+                <span style="padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:700;background:${perfilColor}22;color:${perfilColor}">${PERFIL_LABEL[u.perfil] || u.perfil}</span>
+              </td>
+              <td style="padding:12px 16px">
+                <span style="padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:700;background:${u.ativo!==false?'#dcfce7':'#fee2e2'};color:${u.ativo!==false?'var(--success)':'var(--danger)'}">
+                  ${u.ativo!==false?'Ativo':'Inativo'}
+                </span>
+              </td>
+              <td style="padding:12px 16px;text-align:right">
+                <div style="display:flex;gap:6px;justify-content:flex-end">
+                  <button class="btn btn-sm btn-outline" onclick="openModalUsuario('${u.id}')">Editar</button>
+                  <button class="btn btn-sm btn-outline" onclick="openModalTrocarSenha('${u.id}')">Senha</button>
+                  ${u.id !== currentUser.id ? `<button class="btn btn-sm btn-outline" style="color:var(--danger)" onclick="deleteUsuario('${u.id}')">Excluir</button>` : ''}
+                </div>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div class="card" style="margin-top:20px;background:var(--bg2)">
+      <div style="font-weight:700;margin-bottom:10px;font-size:.88rem">Níveis de acesso</div>
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:.83rem">
+        <div><span style="font-weight:700;color:var(--coral)">Administrador</span> — Acesso total: criar, editar e excluir tudo, incluindo usuários e financeiro.</div>
+        <div><span style="font-weight:700;color:var(--green-mid)">Líder</span> — Pode criar e editar membros, escalas, células, músicos e programação. Não pode excluir nem ver gestão de usuários.</div>
+        <div><span style="font-weight:700;color:var(--info)">Visitante</span> — Somente leitura. Não vê botões de editar ou excluir.</div>
+      </div>
+    </div>`;
+}
+
+function openModalUsuario(id) {
+  let d = document.getElementById('modal-usuario');
+  if (!d) {
+    d = document.createElement('div');
+    d.className = 'modal-overlay';
+    d.id = 'modal-usuario';
+    d.innerHTML = `<div class="modal" style="max-width:460px">
+      <div class="modal-header">
+        <div class="modal-title" id="modal-usuario-title">Novo Usuário</div>
+        <button class="close-btn" onclick="closeModal('modal-usuario')">×</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="usu-id">
+        <div class="form-group">
+          <label>Nome completo *</label>
+          <input type="text" id="usu-nome" placeholder="Ex: Maria Silva">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Usuário (login) *</label>
+            <input type="text" id="usu-user" placeholder="Ex: maria.silva" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label>Perfil</label>
+            <select id="usu-perfil">
+              <option value="admin">Administrador</option>
+              <option value="lider" selected>Líder</option>
+              <option value="visitante">Visitante</option>
+            </select>
+          </div>
+        </div>
+        <div id="usu-senha-wrap">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Senha *</label>
+              <input type="password" id="usu-senha" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+            </div>
+            <div class="form-group">
+              <label>Confirmar senha *</label>
+              <input type="password" id="usu-senha2" placeholder="Repita a senha" autocomplete="new-password">
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="usu-ativo">
+            <option value="true">Ativo</option>
+            <option value="false">Inativo</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('modal-usuario')">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveUsuario()">Salvar</button>
+      </div>
+    </div>`;
+    document.body.appendChild(d);
+  }
+
+  const isEdit = !!id;
+  document.getElementById('modal-usuario-title').textContent = isEdit ? 'Editar Usuário' : 'Novo Usuário';
+  document.getElementById('usu-senha-wrap').style.display = isEdit ? 'none' : '';
+
+  if (isEdit) {
+    const u = state.usuarios.find(x => x.id === id);
+    if (!u) return;
+    document.getElementById('usu-id').value = u.id;
+    document.getElementById('usu-nome').value = u.nome;
+    document.getElementById('usu-user').value = u.usuario;
+    document.getElementById('usu-perfil').value = u.perfil;
+    document.getElementById('usu-ativo').value = String(u.ativo !== false);
+  } else {
+    document.getElementById('usu-id').value = '';
+    document.getElementById('usu-nome').value = '';
+    document.getElementById('usu-user').value = '';
+    document.getElementById('usu-perfil').value = 'lider';
+    document.getElementById('usu-ativo').value = 'true';
+    document.getElementById('usu-senha').value = '';
+    document.getElementById('usu-senha2').value = '';
+  }
+  openModal('modal-usuario');
+}
+
+async function saveUsuario() {
+  const nome   = document.getElementById('usu-nome').value.trim();
+  const user   = document.getElementById('usu-user').value.trim();
+  const perfil = document.getElementById('usu-perfil').value;
+  const ativo  = document.getElementById('usu-ativo').value === 'true';
+  const id     = document.getElementById('usu-id').value;
+
+  if (!nome || !user) { alert('Preencha nome e usuário.'); return; }
+
+  const existe = state.usuarios.find(u => u.usuario === user && u.id !== id);
+  if (existe) { alert('Esse nome de usuário já está em uso.'); return; }
+
+  if (id) {
+    const i = state.usuarios.findIndex(u => u.id === id);
+    if (i >= 0) {
+      state.usuarios[i] = { ...state.usuarios[i], nome, usuario: user, perfil, ativo };
+      if (currentUser.id === id) {
+        currentUser.nome = nome; currentUser.perfil = perfil;
+        sessionStorage.setItem('igreja_session', JSON.stringify(currentUser));
+        document.getElementById('sidebar-user-name').textContent = nome;
+        document.getElementById('sidebar-user-role').textContent = PERFIL_LABEL[perfil];
+      }
+    }
+  } else {
+    const senha = document.getElementById('usu-senha').value;
+    const senha2 = document.getElementById('usu-senha2').value;
+    if (!senha) { alert('Informe a senha.'); return; }
+    if (senha.length < 6) { alert('Senha deve ter ao menos 6 caracteres.'); return; }
+    if (senha !== senha2) { alert('As senhas não coincidem.'); return; }
+    const hash = await hashSenha(senha);
+    state.usuarios.push({ id: uid(), nome, usuario: user, senhaHash: hash, perfil, ativo });
+  }
+  save(); closeModal('modal-usuario'); renderUsuarios();
+}
+
+function openModalTrocarSenha(id) {
+  let d = document.getElementById('modal-trocar-senha');
+  if (!d) {
+    d = document.createElement('div');
+    d.className = 'modal-overlay';
+    d.id = 'modal-trocar-senha';
+    d.innerHTML = `<div class="modal" style="max-width:380px">
+      <div class="modal-header">
+        <div class="modal-title">Trocar Senha</div>
+        <button class="close-btn" onclick="closeModal('modal-trocar-senha')">×</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="ts-id">
+        <div class="form-group">
+          <label>Nova senha *</label>
+          <input type="password" id="ts-senha" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+        </div>
+        <div class="form-group">
+          <label>Confirmar nova senha *</label>
+          <input type="password" id="ts-senha2" placeholder="Repita a senha" autocomplete="new-password">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('modal-trocar-senha')">Cancelar</button>
+        <button class="btn btn-primary" onclick="salvarTrocarSenha()">Salvar</button>
+      </div>
+    </div>`;
+    document.body.appendChild(d);
+  }
+  document.getElementById('ts-id').value = id;
+  document.getElementById('ts-senha').value = '';
+  document.getElementById('ts-senha2').value = '';
+  openModal('modal-trocar-senha');
+}
+
+async function salvarTrocarSenha() {
+  const id = document.getElementById('ts-id').value;
+  const senha = document.getElementById('ts-senha').value;
+  const senha2 = document.getElementById('ts-senha2').value;
+  if (!senha || senha.length < 6) { alert('Senha deve ter ao menos 6 caracteres.'); return; }
+  if (senha !== senha2) { alert('As senhas não coincidem.'); return; }
+  const i = state.usuarios.findIndex(u => u.id === id);
+  if (i >= 0) {
+    state.usuarios[i].senhaHash = await hashSenha(senha);
+    save(); closeModal('modal-trocar-senha');
+    toast('Senha alterada com sucesso!', 'success');
+  }
+}
+
+function deleteUsuario(id) {
+  if (id === currentUser.id) { alert('Você não pode excluir sua própria conta.'); return; }
+  if (!confirm('Excluir este usuário?')) return;
+  state.usuarios = state.usuarios.filter(u => u.id !== id);
+  save(); renderUsuarios();
+}
+
 // ========== INIT ==========
 load();
 seedFinanceiro();
-render();
+checkAuth();
 </script>
 </body>
 </html>
