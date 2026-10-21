@@ -1604,6 +1604,17 @@ function load() {
   if (!state.programacao) state.programacao = [];
   if (!state.celulas) state.celulas = [];
   if (!state.usuarios) state.usuarios = [];
+  if (!state.usuarios.length) {
+    state.usuarios.push({
+      id: 'admin-master',
+      nome: 'Administrador',
+      usuario: 'admin',
+      senhaHash: '85c57e2d828a5ebcbc83c2245dc77993ff6eae2176e8e4574da2abe7b31c6837',
+      perfil: 'admin',
+      ativo: true
+    });
+    save();
+  }
   if (!state.members.length) seedDemo();
 }
 
