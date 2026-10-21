@@ -658,6 +658,13 @@
       </div>
       <div id="dash-ausencias"></div>
     </div>
+    <!-- ATIVIDADE RECENTE -->
+    <div class="panel" style="margin-top:0">
+      <div class="panel-header">
+        <div class="panel-title">Atividade Recente</div>
+      </div>
+      <div id="dash-atividade"></div>
+    </div>
   </div>
 
   <!-- MEMBERS -->
@@ -1596,6 +1603,46 @@ function poolPorRotacao(pool, dataAlvo) {
 
 // ========== PERSIST ==========
 function save() { localStorage.setItem('igreja_data', JSON.stringify(state)); }
+
+// ========== AUDITORIA ==========
+function stampEdit(obj) {
+  if (!currentUser) return obj;
+  obj._editBy  = currentUser.nome;
+  obj._editAt  = new Date().toISOString();
+  return obj;
+}
+
+function logAtividade(acao, modulo, detalhe) {
+  if (!currentUser) return;
+  if (!state.atividade) state.atividade = [];
+  state.atividade.unshift({
+    id: uid(),
+    usuario: currentUser.nome,
+    acao,
+    modulo,
+    detalhe,
+    data: new Date().toISOString()
+  });
+  state.atividade = state.atividade.slice(0, 60);
+}
+
+function fmtEditStamp(obj) {
+  if (!obj || !obj._editBy) return '';
+  const ago = fmtAgo(obj._editAt);
+  return `<span style="font-size:.7rem;color:var(--text2);display:inline-flex;align-items:center;gap:4px;margin-top:3px">
+    <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    ${obj._editBy} · ${ago}</span>`;
+}
+
+function fmtAgo(iso) {
+  if (!iso) return '';
+  const diff = (Date.now() - new Date(iso)) / 1000;
+  if (diff < 60)   return 'agora';
+  if (diff < 3600) return Math.floor(diff/60) + 'min';
+  if (diff < 86400) return Math.floor(diff/3600) + 'h';
+  if (diff < 2592000) return Math.floor(diff/86400) + 'd';
+  return new Date(iso).toLocaleDateString('pt-BR');
+}
 function load() {
   const d = localStorage.getItem('igreja_data');
   if (d) {
@@ -1612,6 +1659,7 @@ function load() {
   if (!state.programacao) state.programacao = [];
   if (!state.celulas) state.celulas = [];
   if (!state.usuarios) state.usuarios = [];
+  if (!state.atividade) state.atividade = [];
   if (!state.usuarios.length) {
     state.usuarios.push({
       id: 'admin-master',
@@ -1752,6 +1800,22 @@ function renderDashboard() {
       <span class="badge ${e.col===1?'badge-green':'badge-orange'}">${e.col===1?'Em Andamento':'A Fazer'}</span>
     </div>`;
   }).join('') : '<div class="empty-state"><div>Sem escalas próximas</div></div>';
+  // atividade recente
+  const ativs = (state.atividade || []).slice(0, 10);
+  const atvEl = document.getElementById('dash-atividade');
+  if (atvEl) atvEl.innerHTML = ativs.length ? ativs.map(a => {
+    const acaoCor = { editou:'var(--info)', criou:'var(--success)', cadastrou:'var(--success)', registrou:'var(--success)', lançou:'var(--warning)' }[a.acao] || 'var(--text2)';
+    return `<div style="padding:9px 0;border-bottom:1px solid var(--border-light);display:flex;align-items:center;gap:10px">
+      <div class="avatar" style="width:30px;height:30px;font-size:.7rem;background:${getAvatar(a.usuario)}">${initials(a.usuario)}</div>
+      <div style="flex:1;min-width:0">
+        <span style="font-weight:600;font-size:.85rem">${a.usuario}</span>
+        <span style="color:${acaoCor};font-size:.82rem;font-weight:600"> ${a.acao} </span>
+        <span style="font-size:.82rem;color:var(--text2)">${a.detalhe || ''}</span>
+        <span style="font-size:.75rem;color:var(--text2);margin-left:4px">· ${a.modulo}</span>
+      </div>
+      <div style="font-size:.72rem;color:var(--text2);flex-shrink:0">${fmtAgo(a.data)}</div>
+    </div>`;
+  }).join('') : '<div class="empty-state"><div>Nenhuma atividade registrada ainda</div></div>';
 }
 
 // ========== MEMBERS ==========
@@ -1776,7 +1840,7 @@ function renderMembers() {
     const [sc, sl] = statusMap[m.status] || ['badge-gray', m.status];
     const aniv = m.aniv ? new Date(m.aniv+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) : '—';
     return `<tr>
-      <td><div class="member-info"><div class="avatar" style="background:${getAvatar(m.nome)}">${initials(m.nome)}</div><div><div style="font-weight:500">${m.nome}</div>${m.apelido?`<div style="font-size:.78rem;color:var(--text2)">${m.apelido}</div>`:''}</div></div></td>
+      <td><div class="member-info"><div class="avatar" style="background:${getAvatar(m.nome)}">${initials(m.nome)}</div><div><div style="font-weight:500">${m.nome}</div>${m.apelido?`<div style="font-size:.78rem;color:var(--text2)">${m.apelido}</div>`:''}${fmtEditStamp(m)}</div></div></td>
       <td style="color:var(--text2)">${m.tel||'—'}</td>
       <td style="color:var(--text2)">${aniv}</td>
       <td>${mins.length ? mins.map(x=>`<span class="badge badge-${x.cor}" style="margin:1px 2px">${x.nome}</span>`).join('') : '<span style="color:var(--text2)">—</span>'}</td>
@@ -1827,8 +1891,8 @@ function saveMember() {
     ministerios: [...document.querySelectorAll('input[name="m-min-cb"]:checked')].map(cb => cb.value),
     obs: document.getElementById('m-obs').value,
   };
-  if (id) { const i = state.members.findIndex(m => m.id === id); state.members[i] = { ...state.members[i], ...data }; toast('Membro atualizado!', 'success'); }
-  else { state.members.push({ id: uid(), ...data }); toast('Membro cadastrado!', 'success'); }
+  if (id) { const i = state.members.findIndex(m => m.id === id); state.members[i] = stampEdit({ ...state.members[i], ...data }); logAtividade('editou', 'Membros', data.nome); toast('Membro atualizado!', 'success'); }
+  else { state.members.push(stampEdit({ id: uid(), ...data })); logAtividade('cadastrou', 'Membros', data.nome); toast('Membro cadastrado!', 'success'); }
   save(); closeModal('modal-member'); render();
 }
 
@@ -1950,8 +2014,8 @@ function saveMinisterio() {
     lider: document.getElementById('min-lider').value,
     desc: document.getElementById('min-desc').value,
   };
-  if (id) { const i = state.ministerios.findIndex(m => m.id === id); state.ministerios[i] = { ...state.ministerios[i], ...data }; toast('Ministério atualizado!', 'success'); }
-  else { state.ministerios.push({ id: uid(), ...data }); toast('Ministério criado!', 'success'); }
+  if (id) { const i = state.ministerios.findIndex(m => m.id === id); state.ministerios[i] = stampEdit({ ...state.ministerios[i], ...data }); logAtividade('editou', 'Ministérios', data.nome); toast('Ministério atualizado!', 'success'); }
+  else { state.ministerios.push(stampEdit({ id: uid(), ...data })); logAtividade('criou', 'Ministérios', data.nome); toast('Ministério criado!', 'success'); }
   save(); closeModal('modal-ministerio'); render();
 }
 
@@ -2321,8 +2385,8 @@ function saveVisita() {
     motivo: document.getElementById('vis-motivo').value,
     status: 'pendente',
   };
-  if (id) { const i = state.visitas.findIndex(v => v.id === id); state.visitas[i] = { ...state.visitas[i], ...data }; toast('Visita atualizada!', 'success'); }
-  else { state.visitas.push({ id: uid(), ...data }); toast('Visita registrada!', 'success'); }
+  if (id) { const i = state.visitas.findIndex(v => v.id === id); state.visitas[i] = stampEdit({ ...state.visitas[i], ...data }); logAtividade('editou', 'Visitas', data.nome); toast('Visita atualizada!', 'success'); }
+  else { state.visitas.push(stampEdit({ id: uid(), ...data })); logAtividade('registrou', 'Visitas', data.nome); toast('Visita registrada!', 'success'); }
   save(); closeModal('modal-visita'); renderVisitas(); updateStats();
 }
 
@@ -2435,8 +2499,8 @@ function saveAtendimento() {
     desc: document.getElementById('at-desc').value,
     col: 0,
   };
-  if (id) { const i = state.atendimentos.findIndex(a => a.id === id); state.atendimentos[i] = { ...state.atendimentos[i], ...data }; toast('Atendimento atualizado!', 'success'); }
-  else { state.atendimentos.push({ id: uid(), ...data }); toast('Atendimento registrado!', 'success'); }
+  if (id) { const i = state.atendimentos.findIndex(a => a.id === id); state.atendimentos[i] = stampEdit({ ...state.atendimentos[i], ...data }); logAtividade('editou', 'Atendimento', data.titulo||data.nome||''); toast('Atendimento atualizado!', 'success'); }
+  else { state.atendimentos.push(stampEdit({ id: uid(), ...data })); logAtividade('criou', 'Atendimento', data.titulo||data.nome||''); toast('Atendimento registrado!', 'success'); }
   save(); closeModal('modal-atendimento'); renderAtendimento(); updateStats();
 }
 
@@ -2734,7 +2798,9 @@ function saveTransacao() {
     mesRef: txTipo==='dizimo' ? document.getElementById('tx-mes-ref').value : '',
     obs:    document.getElementById('tx-obs').value,
   };
+  stampEdit(tx);
   state.financeiro.transacoes.push(tx);
+  logAtividade('lançou', 'Financeiro', `${tx.tipo} ${fmtMoney(valor)}`);
   save(); closeModal('modal-transacao'); renderFinanceiro();
   toast(`${tx.tipo==='saida'?'Saída':'Entrada'} de ${fmtMoney(valor)} registrada!`, 'success');
 }
@@ -3486,9 +3552,9 @@ function saveMusica() {
   };
   if (id) {
     const i = state.musicas.findIndex(x => x.id === id);
-    if (i >= 0) state.musicas[i] = { ...state.musicas[i], ...data };
+    if (i >= 0) { state.musicas[i] = stampEdit({ ...state.musicas[i], ...data }); logAtividade('editou', 'Músicos', data.titulo); }
   } else {
-    state.musicas.push({ id: uid(), ...data });
+    state.musicas.push(stampEdit({ id: uid(), ...data })); logAtividade('cadastrou', 'Músicos', data.titulo);
   }
   save(); closeModal('modal-musica'); renderRepertorio();
 }
@@ -3587,9 +3653,9 @@ function savePlaylist() {
   };
   if (id) {
     const i = state.playlists.findIndex(x => x.id === id);
-    if (i >= 0) state.playlists[i] = { ...state.playlists[i], ...data };
+    if (i >= 0) { state.playlists[i] = stampEdit({ ...state.playlists[i], ...data }); logAtividade('editou', 'Músicos', 'playlist: ' + data.nome); }
   } else {
-    state.playlists.push({ id: uid(), ...data });
+    state.playlists.push(stampEdit({ id: uid(), ...data })); logAtividade('criou', 'Músicos', 'playlist: ' + data.nome);
   }
   save(); closeModal('modal-playlist'); renderPlaylists();
 }
@@ -3895,9 +3961,9 @@ function saveEvento() {
   };
   if (id) {
     const i = state.programacao.findIndex(x => x.id === id);
-    if (i >= 0) state.programacao[i] = { ...state.programacao[i], ...data };
+    if (i >= 0) { state.programacao[i] = stampEdit({ ...state.programacao[i], ...data }); logAtividade('editou', 'Programação', data.titulo); }
   } else {
-    state.programacao.push({ id: uid(), ...data });
+    state.programacao.push(stampEdit({ id: uid(), ...data })); logAtividade('criou', 'Programação', data.titulo);
   }
   save(); closeModal('modal-evento'); renderProgramacao();
 }
@@ -4013,6 +4079,7 @@ function celulCard(c) {
     ${c.diaSemana ? `<div style="font-size:.8rem;color:var(--text2)">${c.diaSemana}${c.horario ? ' às ' + c.horario : ''}</div>` : ''}
     <div style="font-size:.78rem;color:var(--text2);margin-top:6px">${membros.length} membro${membros.length !== 1 ? 's' : ''}</div>
     ${c.obs ? `<div style="font-size:.78rem;color:var(--text2);font-style:italic;margin-top:4px">${c.obs}</div>` : ''}
+    ${fmtEditStamp(c)}
   </div>`;
 }
 
@@ -4137,9 +4204,9 @@ function saveCelula() {
   };
   if (id) {
     const i = state.celulas.findIndex(x => x.id === id);
-    if (i >= 0) state.celulas[i] = { ...state.celulas[i], ...data };
+    if (i >= 0) { state.celulas[i] = stampEdit({ ...state.celulas[i], ...data }); logAtividade('editou', 'Células', data.nome); }
   } else {
-    state.celulas.push({ id: uid(), ...data });
+    state.celulas.push(stampEdit({ id: uid(), ...data })); logAtividade('criou', 'Células', data.nome);
   }
   save(); closeModal('modal-celula'); renderCelulas();
 }
