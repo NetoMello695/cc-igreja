@@ -641,6 +641,10 @@
       <button class="sidebar-user-logout" style="flex:1" onclick="openModalMinhaConta()">Minha conta</button>
       <button class="sidebar-user-logout" style="flex:1" onclick="logout()">Sair</button>
     </div>
+    <div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:.7rem;color:rgba(255,255,255,.5)">
+      <span class="sync-dot" style="width:7px;height:7px;border-radius:50%;background:#f59e0b;display:inline-block;flex-shrink:0" title="Sincronizando..."></span>
+      Sincronização
+    </div>
   </div>
 </nav>
 
@@ -650,6 +654,7 @@
     <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
   </button>
   <span class="mobile-topbar-title" id="mobile-topbar-title">Dashboard</span>
+  <span class="sync-dot" style="width:8px;height:8px;border-radius:50%;background:#f59e0b;display:inline-block;flex-shrink:0" title="Sincronizando..."></span>
   <div id="mobile-user-avatar" style="width:30px;height:30px;border-radius:50%;background:var(--coral);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;color:#fff;cursor:pointer" onclick="openModalMinhaConta()"></div>
 </div>
 
@@ -1809,7 +1814,67 @@ function poolPorRotacao(pool, dataAlvo) {
 }
 
 // ========== PERSIST ==========
-function save() { localStorage.setItem('igreja_data', JSON.stringify(state)); }
+// ========== SUPABASE SYNC ==========
+const SB_URL = 'https://qphgtpylkrjtttfuksid.supabase.co';
+const SB_KEY = 'sb_publishable_4EkiK5lUpcfbnFtwE3ZRTw_giBtovUD';
+let _syncTimer = null;
+
+function setSyncDot(status) {
+  const dots = document.querySelectorAll('.sync-dot');
+  dots.forEach(el => {
+    if (status === 'saving') { el.style.background = '#f59e0b'; el.title = 'Sincronizando...'; }
+    else if (status === 'ok')  { el.style.background = '#22c55e'; el.title = 'Sincronizado'; }
+    else                       { el.style.background = '#ef4444'; el.title = 'Erro na sincronização'; }
+  });
+}
+
+async function pushToCloud() {
+  try {
+    setSyncDot('saving');
+    const res = await fetch(`${SB_URL}/rest/v1/dados`, {
+      method: 'POST',
+      headers: {
+        'apikey': SB_KEY,
+        'Authorization': `Bearer ${SB_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({ id: 1, state: state, updated_at: new Date().toISOString() })
+    });
+    if (!res.ok) throw new Error(await res.text());
+    setSyncDot('ok');
+  } catch(e) {
+    console.warn('Sync error:', e);
+    setSyncDot('error');
+  }
+}
+
+async function pullFromCloud() {
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/dados?id=eq.1&select=state`, {
+      headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` }
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    if (data && data[0] && data[0].state && Object.keys(data[0].state).length > 0) {
+      state = data[0].state;
+      migrateState();
+      localStorage.setItem('igreja_data', JSON.stringify(state));
+      setSyncDot('ok');
+      return true;
+    }
+  } catch(e) {
+    console.warn('Pull error:', e);
+    setSyncDot('error');
+  }
+  return false;
+}
+
+function save() {
+  localStorage.setItem('igreja_data', JSON.stringify(state));
+  clearTimeout(_syncTimer);
+  _syncTimer = setTimeout(pushToCloud, 1500);
+}
 
 // ========== AUDITORIA ==========
 function stampEdit(obj) {
@@ -1850,34 +1915,36 @@ function fmtAgo(iso) {
   if (diff < 2592000) return Math.floor(diff/86400) + 'd';
   return new Date(iso).toLocaleDateString('pt-BR');
 }
-function load() {
-  const d = localStorage.getItem('igreja_data');
-  if (d) {
-    state = JSON.parse(d);
-    // migra dado legado: m.ministerio (string) → m.ministerios (array)
-    state.members.forEach(m => {
-      if (!Array.isArray(m.ministerios)) {
-        m.ministerios = m.ministerio ? [m.ministerio] : [];
-      }
-    });
-  }
-  if (!state.musicas) state.musicas = [];
-  if (!state.playlists) state.playlists = [];
+function migrateState() {
+  if (!state.members) state.members = [];
+  state.members.forEach(m => {
+    if (!Array.isArray(m.ministerios)) m.ministerios = m.ministerio ? [m.ministerio] : [];
+  });
+  if (!state.musicas)     state.musicas = [];
+  if (!state.playlists)   state.playlists = [];
   if (!state.programacao) state.programacao = [];
-  if (!state.celulas) state.celulas = [];
-  if (!state.usuarios) state.usuarios = [];
-  if (!state.atividade) state.atividade = [];
+  if (!state.celulas)     state.celulas = [];
+  if (!state.usuarios)    state.usuarios = [];
+  if (!state.atividade)   state.atividade = [];
+  if (!state.ministerios) state.ministerios = [];
+  if (!state.escalas)     state.escalas = [];
+  if (!state.visitas)     state.visitas = [];
+  if (!state.atendimentos)state.atendimentos = [];
+  if (!state.cultos)      state.cultos = [];
+  if (!state.financeiro)  state.financeiro = [];
   if (!state.usuarios.length) {
     state.usuarios.push({
-      id: 'admin-master',
-      nome: 'Administrador',
-      usuario: 'admin',
+      id: 'admin-master', nome: 'Administrador', usuario: 'admin',
       senhaHash: '85c57e2d828a5ebcbc83c2245dc77993ff6eae2176e8e4574da2abe7b31c6837',
-      perfil: 'admin',
-      ativo: true
+      perfil: 'admin', ativo: true
     });
-    save();
   }
+}
+
+function load() {
+  const d = localStorage.getItem('igreja_data');
+  if (d) { try { state = JSON.parse(d); } catch(e) {} }
+  migrateState();
   if (!state.members.length) seedDemo();
 }
 
@@ -4902,9 +4969,19 @@ function deleteUsuario(id) {
 }
 
 // ========== INIT ==========
-load();
-seedFinanceiro();
-checkAuth();
+(async function() {
+  load();                      // carrega localStorage imediatamente
+  await pullFromCloud();       // sobrescreve com dados da nuvem se existirem
+  seedFinanceiro();
+  checkAuth();
+})();
+
+// Re-sincroniza quando a aba volta ao foco
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && currentUser) {
+    pullFromCloud().then(() => render());
+  }
+});
 </script>
 </body>
 </html>
