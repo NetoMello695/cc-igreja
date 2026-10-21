@@ -451,13 +451,122 @@
   .fin-resumo-bar .saida-fill   { background: var(--danger); }
 
   @media (max-width: 1100px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 768px) {
+
+  /* TABLET */
+  @media (max-width: 768px) and (min-width: 641px) {
     .sidebar { width: 64px; }
     .sidebar-logo .logo-text, .sidebar-logo .logo-sub, .nav-item span:not(.nav-icon), .sidebar-section { display: none; }
     .nav-item { padding: 12px; justify-content: center; }
     .main { margin-left: 64px; padding: 16px; }
     .stats-grid { grid-template-columns: repeat(2, 1fr); }
     .grid-2 { grid-template-columns: 1fr; }
+  }
+
+  /* MOBILE */
+  .mobile-topbar { display: none; }
+  .mobile-bottomnav { display: none; }
+  .mobile-drawer-overlay { display: none; }
+
+  @media (max-width: 640px) {
+    /* Hide desktop sidebar */
+    .sidebar { display: none !important; }
+
+    /* Full-width main with bottom nav space */
+    .main { margin-left: 0 !important; padding: 0 0 72px !important; }
+    .page { padding: 16px 14px; }
+    .page-header { flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+    .page-header > div:last-child { width: 100%; display: flex; gap: 8px; flex-wrap: wrap; }
+    .page-header .btn { flex: 1; min-width: 120px; font-size: .82rem; }
+    .page-title { font-size: 1.3rem; }
+
+    /* Top bar */
+    .mobile-topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 200;
+      background: var(--green-dark); color: #fff;
+      padding: 12px 16px; gap: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.18);
+    }
+    .mobile-topbar-title { font-weight: 700; font-size: 1rem; flex: 1; font-family: 'Playfair Display', serif; }
+    .mobile-topbar-btn { background: none; border: none; color: #fff; padding: 4px; cursor: pointer; display: flex; align-items: center; }
+
+    /* Bottom nav */
+    .mobile-bottomnav {
+      display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+      background: #fff; border-top: 1px solid var(--border);
+      box-shadow: 0 -4px 16px rgba(30,77,60,.10);
+    }
+    .mobile-bnav-item {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      padding: 8px 4px 10px; gap: 3px; background: none; border: none;
+      cursor: pointer; font-size: .62rem; font-weight: 600; color: var(--text2);
+      transition: color .15s;
+    }
+    .mobile-bnav-item.active { color: var(--green-dark); }
+    .mobile-bnav-item svg { flex-shrink: 0; }
+
+    /* Drawer */
+    .mobile-drawer-overlay {
+      display: block; position: fixed; inset: 0; z-index: 300;
+      background: rgba(0,0,0,.45); opacity: 0; pointer-events: none;
+      transition: opacity .22s;
+    }
+    .mobile-drawer-overlay.open { opacity: 1; pointer-events: all; }
+    .mobile-drawer {
+      position: fixed; top: 0; left: -280px; bottom: 0; width: 272px; z-index: 301;
+      background: var(--green-dark); display: flex; flex-direction: column;
+      transition: left .22s cubic-bezier(.4,0,.2,1);
+      box-shadow: 4px 0 24px rgba(0,0,0,.25);
+    }
+    .mobile-drawer.open { left: 0; }
+    .mobile-drawer .sidebar-logo { padding: 22px 18px 16px; border-bottom: 1px solid rgba(255,255,255,.1); margin-bottom: 6px; }
+    .mobile-drawer .sidebar-nav-scroll { flex: 1; overflow-y: auto; }
+    .mobile-drawer .nav-item { padding: 11px 18px; }
+    .mobile-drawer .sidebar-section { padding: 10px 18px 4px; font-size: .68rem; }
+    .mobile-drawer .sidebar-user { padding: 12px 18px; }
+
+    /* Modals — bottom sheet */
+    .modal-overlay { align-items: flex-end !important; padding: 0 !important; }
+    .modal-overlay .modal {
+      width: 100% !important; max-width: 100% !important;
+      border-radius: 20px 20px 0 0 !important;
+      max-height: 92vh; overflow-y: auto;
+    }
+
+    /* Forms */
+    .form-row { flex-direction: column !important; }
+    .form-row .form-group { min-width: 0 !important; }
+
+    /* Stats */
+    .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+    .stat-card { padding: 14px 12px !important; }
+
+    /* Cards */
+    .card { padding: 14px !important; }
+
+    /* Tables — horizontal scroll */
+    .card > table, #members-tbody ~ table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    /* Células board — horizontal scroll */
+    #celulas-board { overflow-x: auto; }
+
+    /* Financeiro tabs */
+    .fin-tabs { max-width: 100% !important; }
+
+    /* Login */
+    .login-overlay { padding: 16px; align-items: center; }
+    .login-card { border-radius: 16px; padding: 28px 20px; box-shadow: 0 8px 32px rgba(0,0,0,.25); }
+    .login-logo-name { font-size: 1rem; }
+
+    /* PDF overlay */
+    .pdf-overlay { padding: 0 !important; }
+    .pdf-overlay > div { padding: 12px !important; }
+    .pdf-sheet { padding: 20px 16px !important; }
+
+    /* Panels grid */
+    .grid-2 { grid-template-columns: 1fr !important; }
+    .panel { padding: 14px !important; }
   }
   @media print {
     body * { visibility: hidden !important; }
@@ -534,6 +643,104 @@
     </div>
   </div>
 </nav>
+
+<!-- MOBILE TOP BAR -->
+<div class="mobile-topbar" id="mobile-topbar">
+  <button class="mobile-topbar-btn" onclick="toggleMobileDrawer()" aria-label="Menu">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <span class="mobile-topbar-title" id="mobile-topbar-title">Dashboard</span>
+  <div id="mobile-user-avatar" style="width:30px;height:30px;border-radius:50%;background:var(--coral);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;color:#fff;cursor:pointer" onclick="openModalMinhaConta()"></div>
+</div>
+
+<!-- MOBILE DRAWER OVERLAY -->
+<div class="mobile-drawer-overlay" id="mobile-drawer-overlay" onclick="closeMobileDrawer()">
+  <nav class="mobile-drawer" id="mobile-drawer" onclick="event.stopPropagation()">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="2" x2="12" y2="22"/><line x1="5" y1="8" x2="19" y2="8"/></svg>
+      </div>
+      <div>
+        <div class="logo-text">CC-Campo<br>do Coelho</div>
+        <div class="logo-sub">Sistema de Gestão</div>
+      </div>
+    </div>
+    <div class="sidebar-nav-scroll">
+      <div class="sidebar-section">Principal</div>
+      <div class="nav-item" id="drawer-nav-dashboard" onclick="nav('dashboard');closeMobileDrawer()">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span><span>Dashboard</span>
+      </div>
+      <div class="nav-item" id="drawer-nav-members" onclick="nav('members');closeMobileDrawer()">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></span><span>Membros</span>
+      </div>
+      <div class="sidebar-section">Ministérios</div>
+      <div class="nav-item" id="drawer-nav-ministerios" onclick="nav('ministerios');closeMobileDrawer()">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg></span><span>Ministérios</span>
+      </div>
+      <div class="nav-item" id="drawer-nav-escalas" onclick="nav('escalas');closeMobileDrawer()">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span><span>Escalas</span>
+      </div>
+      <div class="nav-item" id="drawer-nav-musicos" onclick="nav('musicos');closeMobileDrawer()">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span><span>Músicos</span>
+      </div>
+      <div class="nav-item" id="drawer-nav-celulas" onclick="nav('celulas');closeMobileDrawer()">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg></span><span>Células</span>
+      </div>
+      <div class="nav-item" id="drawer-nav-programacao" onclick="nav('programacao');closeMobileDrawer()">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span><span>Programação</span>
+      </div>
+      <div class="sidebar-section">Pastoral</div>
+      <div class="nav-item" id="drawer-nav-visitas" onclick="nav('visitas');closeMobileDrawer()">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></span><span>Visitas</span>
+      </div>
+      <div class="nav-item" id="drawer-nav-atendimento" onclick="nav('atendimento');closeMobileDrawer()">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></span><span>Atendimento</span>
+      </div>
+      <div class="sidebar-section">Registros</div>
+      <div class="nav-item" id="drawer-nav-presenca" onclick="nav('presenca');closeMobileDrawer()">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span><span>Presença</span>
+      </div>
+      <div class="nav-item" id="drawer-nav-financeiro" onclick="nav('financeiro');closeMobileDrawer()">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></span><span>Financeiro</span>
+      </div>
+      <div class="nav-item" id="drawer-nav-usuarios" onclick="nav('usuarios');closeMobileDrawer()" style="display:none">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></span><span>Usuários</span>
+      </div>
+    </div>
+    <div class="sidebar-user" id="drawer-user-info">
+      <div class="sidebar-user-name" id="drawer-user-name"></div>
+      <div class="sidebar-user-role" id="drawer-user-role"></div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <button class="sidebar-user-logout" style="flex:1" onclick="openModalMinhaConta();closeMobileDrawer()">Minha conta</button>
+        <button class="sidebar-user-logout" style="flex:1" onclick="logout()">Sair</button>
+      </div>
+    </div>
+  </nav>
+</div>
+
+<!-- MOBILE BOTTOM NAV -->
+<div class="mobile-bottomnav" id="mobile-bottomnav">
+  <button class="mobile-bnav-item active" id="bnav-dashboard" onclick="nav('dashboard')">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Início
+  </button>
+  <button class="mobile-bnav-item" id="bnav-members" onclick="nav('members')">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+    Membros
+  </button>
+  <button class="mobile-bnav-item" id="bnav-escalas" onclick="nav('escalas')">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    Escalas
+  </button>
+  <button class="mobile-bnav-item" id="bnav-financeiro" onclick="nav('financeiro')">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+    Financeiro
+  </button>
+  <button class="mobile-bnav-item" id="bnav-more" onclick="toggleMobileDrawer()">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    Mais
+  </button>
+</div>
 
 <!-- LOGIN OVERLAY -->
 <div id="login-overlay" class="login-overlay">
@@ -1718,13 +1925,27 @@ function seedDemo() {
 
 // ========== NAV ==========
 let currentPage = 'dashboard';
+const PAGE_LABELS = {
+  dashboard: 'Dashboard', members: 'Membros', ministerios: 'Ministérios',
+  escalas: 'Escalas', musicos: 'Músicos', celulas: 'Células',
+  programacao: 'Programação', visitas: 'Visitas', atendimento: 'Atendimento',
+  presenca: 'Presença', financeiro: 'Financeiro', usuarios: 'Usuários'
+};
+
 function nav(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
   const items = document.querySelectorAll('.nav-item');
-  items.forEach(i => { if (i.getAttribute('onclick')?.includes(page)) i.classList.add('active'); });
+  items.forEach(i => { if (i.getAttribute('onclick')?.includes("'" + page + "'")) i.classList.add('active'); });
   currentPage = page;
+  // Mobile topbar title
+  const tt = document.getElementById('mobile-topbar-title');
+  if (tt) tt.textContent = PAGE_LABELS[page] || page;
+  // Mobile bottom nav active
+  document.querySelectorAll('.mobile-bnav-item').forEach(b => b.classList.remove('active'));
+  const bnav = document.getElementById('bnav-' + page);
+  if (bnav) bnav.classList.add('active');
   render();
 }
 
@@ -4247,17 +4468,50 @@ function checkAuth() {
 
 function showApp() {
   document.getElementById('login-overlay').style.display = 'none';
-  // Show user info in sidebar
+  // Sidebar user info
   const info = document.getElementById('sidebar-user-info');
   if (info) {
     info.style.display = '';
     document.getElementById('sidebar-user-name').textContent = currentUser.nome;
     document.getElementById('sidebar-user-role').textContent = PERFIL_LABEL[currentUser.perfil] || currentUser.perfil;
   }
-  // Show/hide Usuários nav item
+  // Drawer user info
+  const di = document.getElementById('drawer-user-info');
+  if (di) {
+    document.getElementById('drawer-user-name').textContent = currentUser.nome;
+    document.getElementById('drawer-user-role').textContent = PERFIL_LABEL[currentUser.perfil] || currentUser.perfil;
+  }
+  // Mobile avatar initials
+  const av = document.getElementById('mobile-user-avatar');
+  if (av) av.textContent = (currentUser.nome || 'U').charAt(0).toUpperCase();
+  // Show/hide Usuários nav items
+  const isAdm = currentUser.perfil === 'admin';
   const navU = document.getElementById('nav-usuarios');
-  if (navU) navU.style.display = currentUser.perfil === 'admin' ? '' : 'none';
+  if (navU) navU.style.display = isAdm ? '' : 'none';
+  const drawU = document.getElementById('drawer-nav-usuarios');
+  if (drawU) drawU.style.display = isAdm ? '' : 'none';
+  // Show mobile UI
+  document.getElementById('mobile-topbar').style.display = '';
+  document.getElementById('mobile-bottomnav').style.display = '';
   render();
+}
+
+function toggleMobileDrawer() {
+  const overlay = document.getElementById('mobile-drawer-overlay');
+  const drawer = document.getElementById('mobile-drawer');
+  const isOpen = overlay.classList.contains('open');
+  if (isOpen) {
+    overlay.classList.remove('open');
+    drawer.classList.remove('open');
+  } else {
+    overlay.classList.add('open');
+    drawer.classList.add('open');
+  }
+}
+
+function closeMobileDrawer() {
+  document.getElementById('mobile-drawer-overlay').classList.remove('open');
+  document.getElementById('mobile-drawer').classList.remove('open');
 }
 
 async function doLogin() {
@@ -4298,6 +4552,9 @@ function logout() {
   currentUser = null;
   document.getElementById('sidebar-user-info').style.display = 'none';
   document.getElementById('nav-usuarios').style.display = 'none';
+  document.getElementById('mobile-topbar').style.display = 'none';
+  document.getElementById('mobile-bottomnav').style.display = 'none';
+  closeMobileDrawer();
   document.getElementById('login-user').value = '';
   document.getElementById('login-senha').value = '';
   document.getElementById('login-erro').textContent = '';
@@ -4495,6 +4752,12 @@ async function saveUsuario() {
         sessionStorage.setItem('igreja_session', JSON.stringify(currentUser));
         document.getElementById('sidebar-user-name').textContent = nome;
         document.getElementById('sidebar-user-role').textContent = PERFIL_LABEL[perfil] || perfil;
+        const dn2 = document.getElementById('drawer-user-name');
+        if (dn2) dn2.textContent = nome;
+        const dr2 = document.getElementById('drawer-user-role');
+        if (dr2) dr2.textContent = PERFIL_LABEL[perfil] || perfil;
+        const av2 = document.getElementById('mobile-user-avatar');
+        if (av2) av2.textContent = nome.charAt(0).toUpperCase();
       }
     }
   } else {
@@ -4623,6 +4886,10 @@ async function salvarMinhaConta() {
   currentUser.nome = nome;
   sessionStorage.setItem('igreja_session', JSON.stringify(currentUser));
   document.getElementById('sidebar-user-name').textContent = nome;
+  const dn = document.getElementById('drawer-user-name');
+  if (dn) dn.textContent = nome;
+  const av = document.getElementById('mobile-user-avatar');
+  if (av) av.textContent = nome.charAt(0).toUpperCase();
   save(); closeModal('modal-minha-conta');
   toast('Conta atualizada!', 'success');
 }
