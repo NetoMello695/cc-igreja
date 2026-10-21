@@ -42,9 +42,12 @@
   .sidebar {
     position: fixed; left: 0; top: 0; width: 228px; height: 100vh;
     background: var(--green-dark);
-    display: flex; flex-direction: column; z-index: 100; padding: 0 0 24px;
+    display: flex; flex-direction: column; z-index: 100; padding: 0;
     box-shadow: 2px 0 20px rgba(30,77,60,.18);
   }
+  .sidebar-nav-scroll { flex: 1; overflow-y: auto; padding-bottom: 8px; }
+  .sidebar-nav-scroll::-webkit-scrollbar { width: 4px; }
+  .sidebar-nav-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 4px; }
   .sidebar-logo {
     padding: 26px 22px 20px;
     display: flex; align-items: center; gap: 12px;
@@ -199,7 +202,7 @@
   .login-btn:hover { background: var(--green-mid); }
   .login-erro { color: var(--danger); font-size: .82rem; text-align: center; margin-top: 10px; min-height: 18px; }
   .login-setup-link { text-align: center; margin-top: 16px; font-size: .8rem; color: var(--text2); }
-  .sidebar-user { padding: 12px 16px; border-top: 1px solid rgba(255,255,255,.1); margin-top: auto; }
+  .sidebar-user { padding: 12px 16px; border-top: 1px solid rgba(255,255,255,.1); flex-shrink: 0; }
   .sidebar-user-name { font-size: .82rem; font-weight: 700; color: #fff; }
   .sidebar-user-role { font-size: .72rem; color: rgba(255,255,255,.55); margin-top: 1px; }
   .sidebar-user-logout { margin-top: 8px; width: 100%; padding: 7px; background: rgba(255,255,255,.08); border: none; border-radius: 8px; color: rgba(255,255,255,.7); font-size: .78rem; cursor: pointer; transition: background .15s; }
@@ -478,6 +481,7 @@
       <div class="logo-sub">Sistema de Gestão</div>
     </div>
   </div>
+  <div class="sidebar-nav-scroll">
   <div class="sidebar-section">Principal</div>
   <div class="nav-item active" onclick="nav('dashboard')">
     <span class="nav-icon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span><span>Dashboard</span>
@@ -520,10 +524,14 @@
   <div class="nav-item" id="nav-usuarios" onclick="nav('usuarios')" style="display:none">
     <span class="nav-icon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></span><span>Usuários</span>
   </div>
+  </div><!-- end sidebar-nav-scroll -->
   <div class="sidebar-user" id="sidebar-user-info" style="display:none">
     <div class="sidebar-user-name" id="sidebar-user-name"></div>
     <div class="sidebar-user-role" id="sidebar-user-role"></div>
-    <button class="sidebar-user-logout" onclick="logout()">Sair da conta</button>
+    <div style="display:flex;gap:6px;margin-top:8px">
+      <button class="sidebar-user-logout" style="flex:1" onclick="openModalMinhaConta()">Minha conta</button>
+      <button class="sidebar-user-logout" style="flex:1" onclick="logout()">Sair</button>
+    </div>
   </div>
 </nav>
 
@@ -4229,9 +4237,36 @@ function logout() {
   document.getElementById('login-overlay').style.display = 'flex';
 }
 
-function isAdmin() { return currentUser && currentUser.perfil === 'admin'; }
-function canEdit() { return currentUser && (currentUser.perfil === 'admin' || currentUser.perfil === 'lider'); }
-function canDelete() { return currentUser && currentUser.perfil === 'admin'; }
+// Módulos e permissão por módulo: 'none' | 'view' | 'edit' | 'full'
+const MODULOS = [
+  { key: 'members',     label: 'Membros' },
+  { key: 'ministerios', label: 'Ministérios' },
+  { key: 'escalas',     label: 'Escalas' },
+  { key: 'musicos',     label: 'Músicos' },
+  { key: 'celulas',     label: 'Células' },
+  { key: 'programacao', label: 'Programação' },
+  { key: 'visitas',     label: 'Visitas' },
+  { key: 'atendimento', label: 'Atendimento' },
+  { key: 'presenca',    label: 'Presença' },
+  { key: 'financeiro',  label: 'Financeiro' },
+];
+
+const PERM_PRESETS = {
+  admin:     Object.fromEntries(MODULOS.map(m => [m.key, 'full'])),
+  lider:     Object.fromEntries(MODULOS.map(m => [m.key, m.key === 'financeiro' ? 'none' : 'edit'])),
+  visitante: Object.fromEntries(MODULOS.map(m => [m.key, 'view'])),
+};
+
+function getPerm(modulo) {
+  if (!currentUser) return 'none';
+  if (currentUser.perfil === 'admin') return 'full';
+  const perms = currentUser.permissoes || PERM_PRESETS[currentUser.perfil] || {};
+  return perms[modulo] || 'none';
+}
+function isAdmin()        { return currentUser && currentUser.perfil === 'admin'; }
+function canView(m)       { return ['view','edit','full'].includes(getPerm(m)); }
+function canEdit(m)       { return ['edit','full'].includes(getPerm(m)); }
+function canDelete(m)     { return getPerm(m) === 'full'; }
 
 // ========== USUÁRIOS ==========
 
@@ -4239,7 +4274,6 @@ function renderUsuarios() {
   if (!isAdmin()) { nav('dashboard'); return; }
   const el = document.getElementById('page-usuarios');
   if (!el) return;
-  const usuarios = state.usuarios;
   el.innerHTML = `
     <div class="page-header">
       <div class="page-title">Usuários e Permissões</div>
@@ -4247,29 +4281,21 @@ function renderUsuarios() {
     </div>
     <div class="card" style="overflow:hidden;padding:0">
       <table style="width:100%;border-collapse:collapse">
-        <thead>
-          <tr style="background:var(--bg2)">
-            <th style="padding:12px 16px;text-align:left;font-size:.8rem;color:var(--text2);font-weight:600">Nome</th>
-            <th style="padding:12px 16px;text-align:left;font-size:.8rem;color:var(--text2);font-weight:600">Usuário</th>
-            <th style="padding:12px 16px;text-align:left;font-size:.8rem;color:var(--text2);font-weight:600">Perfil</th>
-            <th style="padding:12px 16px;text-align:left;font-size:.8rem;color:var(--text2);font-weight:600">Status</th>
-            <th style="padding:12px 16px;text-align:right;font-size:.8rem;color:var(--text2);font-weight:600">Ações</th>
-          </tr>
-        </thead>
+        <thead><tr style="background:var(--bg2)">
+          <th style="padding:12px 16px;text-align:left;font-size:.8rem;color:var(--text2);font-weight:600">Nome</th>
+          <th style="padding:12px 16px;text-align:left;font-size:.8rem;color:var(--text2);font-weight:600">Usuário</th>
+          <th style="padding:12px 16px;text-align:left;font-size:.8rem;color:var(--text2);font-weight:600">Perfil</th>
+          <th style="padding:12px 16px;text-align:left;font-size:.8rem;color:var(--text2);font-weight:600">Status</th>
+          <th style="padding:12px 16px;text-align:right;font-size:.8rem;color:var(--text2);font-weight:600">Ações</th>
+        </tr></thead>
         <tbody>
-          ${usuarios.map((u, i) => {
-            const perfilColor = { admin: 'var(--coral)', lider: 'var(--green-mid)', visitante: 'var(--info)' }[u.perfil] || 'var(--text2)';
+          ${state.usuarios.map((u, i) => {
+            const pc = { admin:'var(--coral)', lider:'var(--green-mid)', visitante:'var(--info)', custom:'#8B5CF6' }[u.perfil] || 'var(--text2)';
             return `<tr style="border-top:1px solid var(--border-light);background:${i%2===0?'#fff':'var(--bg2)'}">
               <td style="padding:12px 16px;font-weight:600">${u.nome}</td>
-              <td style="padding:12px 16px;color:var(--text2);font-family:monospace;font-size:.88rem">${u.usuario}</td>
-              <td style="padding:12px 16px">
-                <span style="padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:700;background:${perfilColor}22;color:${perfilColor}">${PERFIL_LABEL[u.perfil] || u.perfil}</span>
-              </td>
-              <td style="padding:12px 16px">
-                <span style="padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:700;background:${u.ativo!==false?'#dcfce7':'#fee2e2'};color:${u.ativo!==false?'var(--success)':'var(--danger)'}">
-                  ${u.ativo!==false?'Ativo':'Inativo'}
-                </span>
-              </td>
+              <td style="padding:12px 16px;color:var(--text2);font-family:monospace;font-size:.85rem">${u.usuario}</td>
+              <td style="padding:12px 16px"><span style="padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:700;background:${pc}22;color:${pc}">${PERFIL_LABEL[u.perfil] || u.perfil}</span></td>
+              <td style="padding:12px 16px"><span style="padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:700;background:${u.ativo!==false?'#dcfce7':'#fee2e2'};color:${u.ativo!==false?'var(--success)':'var(--danger)'}">${u.ativo!==false?'Ativo':'Inativo'}</span></td>
               <td style="padding:12px 16px;text-align:right">
                 <div style="display:flex;gap:6px;justify-content:flex-end">
                   <button class="btn btn-sm btn-outline" onclick="openModalUsuario('${u.id}')">Editar</button>
@@ -4281,98 +4307,100 @@ function renderUsuarios() {
           }).join('')}
         </tbody>
       </table>
-    </div>
-    <div class="card" style="margin-top:20px;background:var(--bg2)">
-      <div style="font-weight:700;margin-bottom:10px;font-size:.88rem">Níveis de acesso</div>
-      <div style="display:flex;flex-direction:column;gap:8px;font-size:.83rem">
-        <div><span style="font-weight:700;color:var(--coral)">Administrador</span> — Acesso total: criar, editar e excluir tudo, incluindo usuários e financeiro.</div>
-        <div><span style="font-weight:700;color:var(--green-mid)">Líder</span> — Pode criar e editar membros, escalas, células, músicos e programação. Não pode excluir nem ver gestão de usuários.</div>
-        <div><span style="font-weight:700;color:var(--info)">Visitante</span> — Somente leitura. Não vê botões de editar ou excluir.</div>
-      </div>
     </div>`;
 }
 
 function openModalUsuario(id) {
+  const u = id ? state.usuarios.find(x => x.id === id) : null;
+  const isEdit = !!u;
+  const perms = u ? (u.permissoes || PERM_PRESETS[u.perfil] || PERM_PRESETS.visitante) : { ...PERM_PRESETS.lider };
+
+  const permRow = (mod) => `
+    <tr>
+      <td style="padding:7px 10px;font-size:.82rem;font-weight:600">${mod.label}</td>
+      <td style="padding:7px 4px">
+        <select name="perm-${mod.key}" style="font-size:.78rem;padding:3px 6px;border-radius:6px;border:1px solid var(--border);background:var(--bg3)">
+          <option value="none" ${perms[mod.key]==='none'?'selected':''}>Sem acesso</option>
+          <option value="view" ${perms[mod.key]==='view'?'selected':''}>Ver</option>
+          <option value="edit" ${perms[mod.key]==='edit'?'selected':''}>Ver + Editar</option>
+          <option value="full" ${perms[mod.key]==='full'?'selected':''}>Total (+ Excluir)</option>
+        </select>
+      </td>
+    </tr>`;
+
   let d = document.getElementById('modal-usuario');
-  if (!d) {
-    d = document.createElement('div');
-    d.className = 'modal-overlay';
-    d.id = 'modal-usuario';
-    d.innerHTML = `<div class="modal" style="max-width:460px">
-      <div class="modal-header">
-        <div class="modal-title" id="modal-usuario-title">Novo Usuário</div>
-        <button class="close-btn" onclick="closeModal('modal-usuario')">×</button>
-      </div>
-      <div class="modal-body">
-        <input type="hidden" id="usu-id">
-        <div class="form-group">
+  if (d) d.remove();
+  d = document.createElement('div');
+  d.className = 'modal-overlay';
+  d.id = 'modal-usuario';
+  d.innerHTML = `<div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <div class="modal-title">${isEdit ? 'Editar Usuário' : 'Novo Usuário'}</div>
+      <button class="close-btn" onclick="closeModal('modal-usuario')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="usu-id" value="${u ? u.id : ''}">
+      <div class="form-row">
+        <div class="form-group" style="flex:2">
           <label>Nome completo *</label>
-          <input type="text" id="usu-nome" placeholder="Ex: Maria Silva">
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Usuário (login) *</label>
-            <input type="text" id="usu-user" placeholder="Ex: maria.silva" autocomplete="off">
-          </div>
-          <div class="form-group">
-            <label>Perfil</label>
-            <select id="usu-perfil">
-              <option value="admin">Administrador</option>
-              <option value="lider" selected>Líder</option>
-              <option value="visitante">Visitante</option>
-            </select>
-          </div>
-        </div>
-        <div id="usu-senha-wrap">
-          <div class="form-row">
-            <div class="form-group">
-              <label>Senha *</label>
-              <input type="password" id="usu-senha" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
-            </div>
-            <div class="form-group">
-              <label>Confirmar senha *</label>
-              <input type="password" id="usu-senha2" placeholder="Repita a senha" autocomplete="new-password">
-            </div>
-          </div>
+          <input type="text" id="usu-nome" value="${u ? u.nome : ''}" placeholder="Ex: Maria Silva">
         </div>
         <div class="form-group">
           <label>Status</label>
           <select id="usu-ativo">
-            <option value="true">Ativo</option>
-            <option value="false">Inativo</option>
+            <option value="true" ${(!u || u.ativo!==false)?'selected':''}>Ativo</option>
+            <option value="false" ${(u && u.ativo===false)?'selected':''}>Inativo</option>
           </select>
         </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline" onclick="closeModal('modal-usuario')">Cancelar</button>
-        <button class="btn btn-primary" onclick="saveUsuario()">Salvar</button>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Usuário (login) *</label>
+          <input type="text" id="usu-user" value="${u ? u.usuario : ''}" placeholder="Ex: maria.silva" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label>Perfil base</label>
+          <select id="usu-perfil" onchange="preencherPermissoes(this.value)">
+            <option value="admin"    ${u&&u.perfil==='admin'   ?'selected':''}>Administrador</option>
+            <option value="lider"    ${(!u||u.perfil==='lider')?'selected':''}>Líder</option>
+            <option value="visitante"${u&&u.perfil==='visitante'?'selected':''}>Visitante</option>
+            <option value="custom"   ${u&&u.perfil==='custom'  ?'selected':''}>Personalizado</option>
+          </select>
+        </div>
       </div>
-    </div>`;
-    document.body.appendChild(d);
-  }
-
-  const isEdit = !!id;
-  document.getElementById('modal-usuario-title').textContent = isEdit ? 'Editar Usuário' : 'Novo Usuário';
-  document.getElementById('usu-senha-wrap').style.display = isEdit ? 'none' : '';
-
-  if (isEdit) {
-    const u = state.usuarios.find(x => x.id === id);
-    if (!u) return;
-    document.getElementById('usu-id').value = u.id;
-    document.getElementById('usu-nome').value = u.nome;
-    document.getElementById('usu-user').value = u.usuario;
-    document.getElementById('usu-perfil').value = u.perfil;
-    document.getElementById('usu-ativo').value = String(u.ativo !== false);
-  } else {
-    document.getElementById('usu-id').value = '';
-    document.getElementById('usu-nome').value = '';
-    document.getElementById('usu-user').value = '';
-    document.getElementById('usu-perfil').value = 'lider';
-    document.getElementById('usu-ativo').value = 'true';
-    document.getElementById('usu-senha').value = '';
-    document.getElementById('usu-senha2').value = '';
-  }
+      ${!isEdit ? `<div class="form-row">
+        <div class="form-group">
+          <label>Senha *</label>
+          <input type="password" id="usu-senha" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+        </div>
+        <div class="form-group">
+          <label>Confirmar senha *</label>
+          <input type="password" id="usu-senha2" placeholder="Repita" autocomplete="new-password">
+        </div>
+      </div>` : ''}
+      <div style="font-weight:700;font-size:.82rem;color:var(--text2);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.04em">Permissões por módulo</div>
+      <div style="background:var(--bg2);border-radius:10px;overflow:hidden">
+        <table id="perm-table" style="width:100%;border-collapse:collapse">
+          ${MODULOS.map(permRow).join('')}
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-usuario')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveUsuario()">Salvar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(d);
   openModal('modal-usuario');
+}
+
+function preencherPermissoes(perfil) {
+  if (perfil === 'custom') return;
+  const preset = PERM_PRESETS[perfil] || PERM_PRESETS.visitante;
+  MODULOS.forEach(m => {
+    const sel = document.querySelector(`[name="perm-${m.key}"]`);
+    if (sel) sel.value = preset[m.key] || 'none';
+  });
 }
 
 async function saveUsuario() {
@@ -4381,31 +4409,34 @@ async function saveUsuario() {
   const perfil = document.getElementById('usu-perfil').value;
   const ativo  = document.getElementById('usu-ativo').value === 'true';
   const id     = document.getElementById('usu-id').value;
-
   if (!nome || !user) { alert('Preencha nome e usuário.'); return; }
-
   const existe = state.usuarios.find(u => u.usuario === user && u.id !== id);
   if (existe) { alert('Esse nome de usuário já está em uso.'); return; }
+
+  const permissoes = {};
+  MODULOS.forEach(m => {
+    const sel = document.querySelector(`[name="perm-${m.key}"]`);
+    permissoes[m.key] = sel ? sel.value : 'view';
+  });
 
   if (id) {
     const i = state.usuarios.findIndex(u => u.id === id);
     if (i >= 0) {
-      state.usuarios[i] = { ...state.usuarios[i], nome, usuario: user, perfil, ativo };
+      state.usuarios[i] = { ...state.usuarios[i], nome, usuario: user, perfil, ativo, permissoes };
       if (currentUser.id === id) {
-        currentUser.nome = nome; currentUser.perfil = perfil;
+        currentUser = { ...currentUser, nome, perfil, permissoes };
         sessionStorage.setItem('igreja_session', JSON.stringify(currentUser));
         document.getElementById('sidebar-user-name').textContent = nome;
-        document.getElementById('sidebar-user-role').textContent = PERFIL_LABEL[perfil];
+        document.getElementById('sidebar-user-role').textContent = PERFIL_LABEL[perfil] || perfil;
       }
     }
   } else {
     const senha = document.getElementById('usu-senha').value;
     const senha2 = document.getElementById('usu-senha2').value;
-    if (!senha) { alert('Informe a senha.'); return; }
-    if (senha.length < 6) { alert('Senha deve ter ao menos 6 caracteres.'); return; }
+    if (!senha || senha.length < 6) { alert('Senha deve ter ao menos 6 caracteres.'); return; }
     if (senha !== senha2) { alert('As senhas não coincidem.'); return; }
     const hash = await hashSenha(senha);
-    state.usuarios.push({ id: uid(), nome, usuario: user, senhaHash: hash, perfil, ativo });
+    state.usuarios.push({ id: uid(), nome, usuario: user, senhaHash: hash, perfil, ativo, permissoes });
   }
   save(); closeModal('modal-usuario'); renderUsuarios();
 }
@@ -4418,7 +4449,7 @@ function openModalTrocarSenha(id) {
     d.id = 'modal-trocar-senha';
     d.innerHTML = `<div class="modal" style="max-width:380px">
       <div class="modal-header">
-        <div class="modal-title">Trocar Senha</div>
+        <div class="modal-title" id="ts-titulo">Trocar Senha</div>
         <button class="close-btn" onclick="closeModal('modal-trocar-senha')">×</button>
       </div>
       <div class="modal-body">
@@ -4457,6 +4488,76 @@ async function salvarTrocarSenha() {
     save(); closeModal('modal-trocar-senha');
     toast('Senha alterada com sucesso!', 'success');
   }
+}
+
+function openModalMinhaConta() {
+  const u = state.usuarios.find(x => x.id === currentUser.id);
+  let d = document.getElementById('modal-minha-conta');
+  if (!d) {
+    d = document.createElement('div');
+    d.className = 'modal-overlay';
+    d.id = 'modal-minha-conta';
+    d.innerHTML = `<div class="modal" style="max-width:400px">
+      <div class="modal-header">
+        <div class="modal-title">Minha Conta</div>
+        <button class="close-btn" onclick="closeModal('modal-minha-conta')">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Nome</label>
+          <input type="text" id="mc-nome" placeholder="Seu nome">
+        </div>
+        <hr style="border:none;border-top:1px solid var(--border-light);margin:16px 0">
+        <div style="font-weight:700;font-size:.82rem;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em">Alterar senha</div>
+        <div class="form-group">
+          <label>Senha atual</label>
+          <input type="password" id="mc-senha-atual" placeholder="••••••••" autocomplete="current-password">
+        </div>
+        <div class="form-group">
+          <label>Nova senha</label>
+          <input type="password" id="mc-senha-nova" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+        </div>
+        <div class="form-group">
+          <label>Confirmar nova senha</label>
+          <input type="password" id="mc-senha-nova2" placeholder="Repita" autocomplete="new-password">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('modal-minha-conta')">Cancelar</button>
+        <button class="btn btn-primary" onclick="salvarMinhaConta()">Salvar</button>
+      </div>
+    </div>`;
+    document.body.appendChild(d);
+  }
+  document.getElementById('mc-nome').value = currentUser.nome || '';
+  document.getElementById('mc-senha-atual').value = '';
+  document.getElementById('mc-senha-nova').value = '';
+  document.getElementById('mc-senha-nova2').value = '';
+  openModal('modal-minha-conta');
+}
+
+async function salvarMinhaConta() {
+  const nome = document.getElementById('mc-nome').value.trim();
+  const senhaAtual = document.getElementById('mc-senha-atual').value;
+  const senhaNova  = document.getElementById('mc-senha-nova').value;
+  const senhaNova2 = document.getElementById('mc-senha-nova2').value;
+  if (!nome) { alert('Informe seu nome.'); return; }
+  const i = state.usuarios.findIndex(u => u.id === currentUser.id);
+  if (i < 0) return;
+
+  if (senhaNova) {
+    const hashAtual = await hashSenha(senhaAtual);
+    if (hashAtual !== state.usuarios[i].senhaHash) { alert('Senha atual incorreta.'); return; }
+    if (senhaNova.length < 6) { alert('Nova senha deve ter ao menos 6 caracteres.'); return; }
+    if (senhaNova !== senhaNova2) { alert('As novas senhas não coincidem.'); return; }
+    state.usuarios[i].senhaHash = await hashSenha(senhaNova);
+  }
+  state.usuarios[i].nome = nome;
+  currentUser.nome = nome;
+  sessionStorage.setItem('igreja_session', JSON.stringify(currentUser));
+  document.getElementById('sidebar-user-name').textContent = nome;
+  save(); closeModal('modal-minha-conta');
+  toast('Conta atualizada!', 'success');
 }
 
 function deleteUsuario(id) {
