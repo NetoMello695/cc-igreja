@@ -1851,13 +1851,15 @@ async function pushToCloud() {
 
 async function pullFromCloud() {
   try {
-    const res = await fetch(`${SB_URL}/rest/v1/dados?id=eq.1&select=state`, {
+    const res = await fetch(`${SB_URL}/rest/v1/dados?id=eq.1&select=state,updated_at`, {
       headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` }
     });
     if (!res.ok) throw new Error(await res.text());
     const data = await res.json();
-    if (data && data[0] && data[0].state && Object.keys(data[0].state).length > 0) {
-      state = data[0].state;
+    const remote = data && data[0] && data[0].state;
+    // só usa dados da nuvem se tiver usuários reais (evita sobrescrever com estado inválido)
+    if (remote && remote.usuarios && remote.usuarios.length > 0) {
+      state = remote;
       migrateState();
       localStorage.setItem('igreja_data', JSON.stringify(state));
       setSyncDot('ok');
@@ -4593,6 +4595,7 @@ async function doLogin() {
   currentUser = { id: u.id, nome: u.nome, usuario: u.usuario, perfil: u.perfil };
   sessionStorage.setItem('igreja_session', JSON.stringify(currentUser));
   showApp();
+  pushToCloud(); // sobe estado local para nuvem imediatamente após login
 }
 
 async function doSetup() {
@@ -4970,8 +4973,11 @@ function deleteUsuario(id) {
 
 // ========== INIT ==========
 (async function() {
-  load();                      // carrega localStorage imediatamente
-  await pullFromCloud();       // sobrescreve com dados da nuvem se existirem
+  load();                           // carrega localStorage imediatamente
+  const fromCloud = await pullFromCloud(); // tenta puxar da nuvem
+  if (!fromCloud && state.usuarios.length) {
+    pushToCloud();                  // nuvem vazia mas local tem dados → sobe para nuvem
+  }
   seedFinanceiro();
   checkAuth();
 })();
