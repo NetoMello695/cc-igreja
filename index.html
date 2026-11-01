@@ -1851,25 +1851,21 @@ async function pushToCloud() {
 
 async function pullFromCloud() {
   try {
-    const res = await fetch(`${SB_URL}/rest/v1/dados?id=eq.1&select=state,updated_at`, {
+    const res = await fetch(`${SB_URL}/rest/v1/dados?id=eq.1&select=state`, {
       headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` }
     });
     if (!res.ok) throw new Error(await res.text());
     const data = await res.json();
     const remote = data && data[0] && data[0].state;
-    // só usa dados da nuvem se tiver usuários reais (evita sobrescrever com estado inválido)
     if (remote && remote.usuarios && remote.usuarios.length > 0) {
-      state = remote;
-      migrateState();
-      localStorage.setItem('igreja_data', JSON.stringify(state));
       setSyncDot('ok');
-      return true;
+      return remote;
     }
   } catch(e) {
     console.warn('Pull error:', e);
     setSyncDot('error');
   }
-  return false;
+  return null;
 }
 
 function save() {
@@ -4973,11 +4969,22 @@ function deleteUsuario(id) {
 
 // ========== INIT ==========
 (async function() {
-  load();                           // carrega localStorage imediatamente
-  const fromCloud = await pullFromCloud(); // tenta puxar da nuvem
-  if (!fromCloud && state.usuarios.length) {
-    pushToCloud();                  // nuvem vazia mas local tem dados → sobe para nuvem
+  load(); // carrega localStorage
+  const hasLocal = !!localStorage.getItem('igreja_data');
+  const cloudState = await pullFromCloud();
+
+  if (!hasLocal && cloudState) {
+    // localStorage vazio → usa nuvem
+    state = cloudState;
+    migrateState();
+    localStorage.setItem('igreja_data', JSON.stringify(state));
+  } else if (hasLocal && state.usuarios.length) {
+    // localStorage tem dados → local é a fonte, atualiza nuvem se ela estiver desatualizada
+    if (!cloudState || cloudState.usuarios.length < state.usuarios.length) {
+      pushToCloud();
+    }
   }
+
   seedFinanceiro();
   checkAuth();
 })();
