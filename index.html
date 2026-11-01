@@ -1871,7 +1871,7 @@ async function pullFromCloud() {
 function save() {
   localStorage.setItem('igreja_data', JSON.stringify(state));
   clearTimeout(_syncTimer);
-  _syncTimer = setTimeout(pushToCloud, 1500);
+  _syncTimer = setTimeout(pushToCloud, 500);
 }
 
 // ========== AUDITORIA ==========
@@ -1943,7 +1943,6 @@ function load() {
   const d = localStorage.getItem('igreja_data');
   if (d) { try { state = JSON.parse(d); } catch(e) {} }
   migrateState();
-  if (!state.members.length) seedDemo();
 }
 
 function seedDemo() {
@@ -4969,20 +4968,20 @@ function deleteUsuario(id) {
 
 // ========== INIT ==========
 (async function() {
-  load(); // carrega localStorage
-  const hasLocal = !!localStorage.getItem('igreja_data');
   const cloudState = await pullFromCloud();
 
-  if (!hasLocal && cloudState) {
-    // localStorage vazio → usa nuvem
+  if (cloudState) {
+    // CLOUD é a fonte de verdade — sempre usa a nuvem
     state = cloudState;
     migrateState();
     localStorage.setItem('igreja_data', JSON.stringify(state));
-  } else if (hasLocal && state.usuarios.length) {
-    // localStorage tem dados → local é a fonte, atualiza nuvem se ela estiver desatualizada
-    if (!cloudState || cloudState.usuarios.length < state.usuarios.length) {
-      pushToCloud();
-    }
+  } else {
+    // Cloud fora do ar ou vazio → usa localStorage como fallback
+    const d = localStorage.getItem('igreja_data');
+    if (d) { try { state = JSON.parse(d); } catch(e) {} }
+    migrateState();
+    if (!state.members || !state.members.length) seedDemo();
+    if (state.usuarios.length) pushToCloud(); // sobe local para nuvem
   }
 
   seedFinanceiro();
@@ -4990,9 +4989,15 @@ function deleteUsuario(id) {
 })();
 
 // Re-sincroniza quando a aba volta ao foco
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && currentUser) {
-    pullFromCloud().then(() => render());
+document.addEventListener('visibilitychange', async () => {
+  if (!document.hidden) {
+    const cloudState = await pullFromCloud();
+    if (cloudState) {
+      state = cloudState;
+      migrateState();
+      localStorage.setItem('igreja_data', JSON.stringify(state));
+      if (currentUser) render();
+    }
   }
 });
 </script>
