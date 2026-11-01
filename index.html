@@ -4579,13 +4579,13 @@ function closeMobileDrawer() {
 }
 
 async function doLogin() {
-  const user = document.getElementById('login-user').value.trim();
+  const user = document.getElementById('login-user').value.trim().toLowerCase();
   const senha = document.getElementById('login-senha').value;
   const erro = document.getElementById('login-erro');
   erro.textContent = '';
   if (!user || !senha) { erro.textContent = 'Preencha usuário e senha.'; return; }
   const hash = await hashSenha(senha);
-  const u = state.usuarios.find(u => u.usuario === user && u.senhaHash === hash && u.ativo !== false);
+  const u = state.usuarios.find(u => (u.usuario||'').toLowerCase() === user && u.senhaHash === hash && u.ativo !== false);
   if (!u) { erro.textContent = 'Usuário ou senha incorretos.'; return; }
   currentUser = { id: u.id, nome: u.nome, usuario: u.usuario, perfil: u.perfil };
   sessionStorage.setItem('igreja_session', JSON.stringify(currentUser));
@@ -4794,7 +4794,7 @@ function preencherPermissoes(perfil) {
 
 async function saveUsuario() {
   const nome   = document.getElementById('usu-nome').value.trim();
-  const user   = document.getElementById('usu-user').value.trim();
+  const user   = document.getElementById('usu-user').value.trim().toLowerCase();
   const perfil = document.getElementById('usu-perfil').value;
   const ativo  = document.getElementById('usu-ativo').value === 'true';
   const id     = document.getElementById('usu-id').value;
