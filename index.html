@@ -3338,7 +3338,7 @@ function seedFinanceiro() {
     { id:uid(), tipo:'saida',   valor:90,   desc:'Material de limpeza',cat:'Materiais',data:d(3),conta:cId1, membro:'', obs:'' },
     { id:uid(), tipo:'entrada', valor:200,  desc:'Doação especial',   cat:'Doação',  data:d(2),  conta:cId1, membro:'', obs:'' },
   ];
-  save();
+  // NÃO chama save() aqui — evita sobrescrever nuvem com dados de seed
 }
 
 // ========== PRESENÇA ==========
@@ -4591,7 +4591,6 @@ async function doLogin() {
   currentUser = { id: u.id, nome: u.nome, usuario: u.usuario, perfil: u.perfil };
   sessionStorage.setItem('igreja_session', JSON.stringify(currentUser));
   showApp();
-  pushToCloud(); // sobe estado local para nuvem imediatamente após login
 }
 
 async function doSetup() {
@@ -4988,7 +4987,6 @@ function deleteUsuario(id) {
     if (d) { try { state = JSON.parse(d); } catch(e) {} }
     migrateState();
     if (!state.members || !state.members.length) seedDemo();
-    if (state.usuarios.length) pushToCloud();
     setLoginStatus('⚠ Sem conexão com nuvem — usando dados locais', '#f59e0b');
   }
 
