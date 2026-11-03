@@ -766,8 +766,9 @@
         <label>Senha</label>
         <input type="password" id="login-senha" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
       </div>
-      <button class="login-btn" onclick="doLogin()">Entrar</button>
+      <button class="login-btn" id="login-btn" onclick="doLogin()">Entrar</button>
       <div class="login-erro" id="login-erro"></div>
+      <div id="login-sync-status" style="margin-top:12px;font-size:.75rem;text-align:center;color:#888;min-height:18px">Conectando...</div>
     </div>
     <div id="setup-form-wrap" style="display:none">
       <div style="text-align:center;margin-bottom:20px;font-size:.9rem;color:var(--text2)">Primeira vez? Crie a conta de administrador.</div>
@@ -4968,20 +4969,27 @@ function deleteUsuario(id) {
 
 // ========== INIT ==========
 (async function() {
+  function setLoginStatus(msg, cor) {
+    const el = document.getElementById('login-sync-status');
+    if (el) { el.textContent = msg; el.style.color = cor || '#888'; }
+  }
+
+  setLoginStatus('Conectando à nuvem...');
   const cloudState = await pullFromCloud();
 
   if (cloudState) {
-    // CLOUD é a fonte de verdade — sempre usa a nuvem
     state = cloudState;
     migrateState();
     localStorage.setItem('igreja_data', JSON.stringify(state));
+    const n = (state.usuarios || []).length;
+    setLoginStatus(`✓ Nuvem conectada · ${n} usuário${n !== 1 ? 's' : ''}`, '#22c55e');
   } else {
-    // Cloud fora do ar ou vazio → usa localStorage como fallback
     const d = localStorage.getItem('igreja_data');
     if (d) { try { state = JSON.parse(d); } catch(e) {} }
     migrateState();
     if (!state.members || !state.members.length) seedDemo();
-    if (state.usuarios.length) pushToCloud(); // sobe local para nuvem
+    if (state.usuarios.length) pushToCloud();
+    setLoginStatus('⚠ Sem conexão com nuvem — usando dados locais', '#f59e0b');
   }
 
   seedFinanceiro();
