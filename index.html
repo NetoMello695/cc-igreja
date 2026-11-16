@@ -1684,6 +1684,18 @@
         <textarea id="mus-cifra" rows="10" placeholder="Cole aqui a cifra ou letra..." style="font-family:monospace;font-size:.85rem;line-height:1.7"></textarea>
       </div>
       <div class="form-group">
+        <label>PDF da Cifra</label>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <label class="btn btn-outline" style="cursor:pointer;margin:0">
+            Escolher PDF
+            <input type="file" id="mus-pdf-input" accept="application/pdf" style="display:none" onchange="onMusPdfChange(this)">
+          </label>
+          <span id="mus-pdf-nome" style="font-size:.82rem;color:var(--text2)">Nenhum arquivo</span>
+          <button class="btn btn-sm btn-outline" id="mus-pdf-clear" onclick="clearMusPdf()" style="display:none;color:var(--danger)">Remover</button>
+        </div>
+        <input type="hidden" id="mus-pdf-data">
+      </div>
+      <div class="form-group">
         <label>Observações</label>
         <input type="text" id="mus-obs" placeholder="Ex: Começar a cappella, repetir ponte 2x...">
       </div>
@@ -3758,8 +3770,9 @@ function renderRepertorio() {
           ${m.obs ? `<div style="font-size:.8rem;color:var(--text2);margin-top:2px;font-style:italic">${m.obs}</div>` : ''}
           ${m.spotify ? `<a href="${m.spotify}" target="_blank" style="font-size:.8rem;color:var(--green-mid);margin-top:4px;display:inline-block">Abrir no Spotify</a>` : ''}
         </div>
-        <div style="display:flex;gap:6px;flex-shrink:0">
+        <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap">
           ${m.cifra ? `<button class="btn btn-sm btn-outline" onclick="verCifra('${m.id}')">Cifra</button>` : ''}
+          ${m.pdf ? `<button class="btn btn-sm btn-outline" onclick="verPdf('${m.id}')">PDF</button>` : ''}
           <button class="btn btn-sm btn-outline" onclick="editMusica('${m.id}')">Editar</button>
           <button class="btn btn-sm btn-outline" style="color:var(--danger)" onclick="deleteMusica('${m.id}')">Excluir</button>
         </div>
@@ -3772,23 +3785,124 @@ function renderMusicos() {
   renderRepertorio();
 }
 
-let cifraModal = null;
+// ===== TRANSPOSITOR =====
+const NOTAS_S = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const NOTAS_B = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+const NOTAS_M = ['Cm','C#m','Dm','D#m','Em','Fm','F#m','Gm','G#m','Am','A#m','Bm'];
+
+function transporNota(nota, semis) {
+  let idx = NOTAS_S.indexOf(nota);
+  if (idx < 0) idx = NOTAS_B.indexOf(nota);
+  if (idx < 0) return nota;
+  return NOTAS_S[((idx + semis) % 12 + 12) % 12];
+}
+
+function transporCifra(texto, semis) {
+  if (!semis) return texto;
+  // Regex: acorde = letra maiúscula + opcionals (#/b) + opcionals (m, maj, min, 7, 9, sus, dim, aug, add, etc.)
+  return texto.replace(/\b([A-G][#b]?)(m(?!aj)|maj|min|dim|aug|sus[24]?|add\d*|[0-9]*)(\b|(?=[^a-z]))/g, (match, raiz, suf) => {
+    return transporNota(raiz, semis) + suf;
+  });
+}
+
+const TONS = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B',
+              'Cm','C#m','Dm','D#m','Em','Fm','F#m','Gm','G#m','Am','A#m','Bm'];
+
+let _cifraAtual = { id: null, semis: 0 };
+
 function verCifra(id) {
   const m = state.musicas.find(x => x.id === id);
   if (!m || !m.cifra) return;
+  _cifraAtual = { id, semis: 0 };
+
   let d = document.getElementById('modal-cifra-view');
-  if (!d) {
-    d = document.createElement('div');
-    d.className = 'modal-overlay';
-    d.id = 'modal-cifra-view';
-    d.innerHTML = `<div class="modal" style="max-width:680px"><div class="modal-header">
+  if (d) d.remove();
+  d = document.createElement('div');
+  d.className = 'modal-overlay';
+  d.id = 'modal-cifra-view';
+  d.innerHTML = `<div class="modal" style="max-width:720px">
+    <div class="modal-header" style="flex-wrap:wrap;gap:8px">
       <div class="modal-title" id="cifra-view-title"></div>
+      <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
+        <span style="font-size:.8rem;color:var(--text2)">Tom:</span>
+        <button onclick="transporView(-1)" style="width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:#fff;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center">−</button>
+        <span id="cifra-tom-atual" style="font-weight:700;min-width:36px;text-align:center;font-size:.95rem"></span>
+        <button onclick="transporView(+1)" style="width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:#fff;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center">+</button>
+        ${m.pdf ? `<button class="btn btn-sm btn-outline" onclick="verPdf('${m.id}')" style="margin-left:4px">Ver PDF</button>` : ''}
+      </div>
       <button class="close-btn" onclick="document.getElementById('modal-cifra-view').classList.remove('open')">×</button>
-    </div><div class="modal-body"><pre id="cifra-view-body" style="white-space:pre-wrap;font-family:monospace;font-size:.85rem;line-height:1.8;background:var(--bg2);padding:16px;border-radius:8px;overflow-x:auto"></pre></div></div>`;
-    document.body.appendChild(d);
+    </div>
+    <div class="modal-body">
+      <pre id="cifra-view-body" style="white-space:pre-wrap;font-family:monospace;font-size:.88rem;line-height:1.9;background:var(--bg2);padding:16px;border-radius:8px;overflow-x:auto;margin:0"></pre>
+    </div>
+  </div>`;
+  document.body.appendChild(d);
+
+  atualizaCifraView();
+  d.classList.add('open');
+}
+
+function atualizaCifraView() {
+  const m = state.musicas.find(x => x.id === _cifraAtual.id);
+  if (!m) return;
+  const semis = _cifraAtual.semis;
+  const tomOrigIdx = TONS.indexOf(m.tom);
+  let tomAtual = m.tom || '—';
+  if (tomOrigIdx >= 0 && semis !== 0) {
+    const isMinor = m.tom && m.tom.endsWith('m') && !m.tom.endsWith('maj');
+    const base = isMinor ? TONS.slice(12) : TONS.slice(0, 12);
+    const origBase = isMinor ? m.tom.replace('m','') : m.tom;
+    const idx = NOTAS_S.indexOf(origBase) >= 0 ? NOTAS_S.indexOf(origBase) : NOTAS_B.indexOf(origBase);
+    if (idx >= 0) tomAtual = NOTAS_S[((idx + semis) % 12 + 12) % 12] + (isMinor ? 'm' : '');
   }
-  document.getElementById('cifra-view-title').textContent = m.titulo + (m.tom ? ' — ' + m.tom : '');
-  document.getElementById('cifra-view-body').textContent = m.cifra;
+  document.getElementById('cifra-tom-atual').textContent = tomAtual;
+  document.getElementById('cifra-view-title').textContent = m.titulo + (m.artista ? ' — ' + m.artista : '');
+  document.getElementById('cifra-view-body').textContent = transporCifra(m.cifra, semis);
+}
+
+function transporView(delta) {
+  _cifraAtual.semis = ((_cifraAtual.semis + delta) % 12 + 12) % 12;
+  atualizaCifraView();
+}
+
+// ===== PDF =====
+function onMusPdfChange(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { alert('PDF muito grande. Máximo 5MB.'); input.value = ''; return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('mus-pdf-data').value = e.target.result;
+    document.getElementById('mus-pdf-nome').textContent = file.name;
+    document.getElementById('mus-pdf-clear').style.display = '';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearMusPdf() {
+  document.getElementById('mus-pdf-data').value = '';
+  document.getElementById('mus-pdf-nome').textContent = 'Nenhum arquivo';
+  document.getElementById('mus-pdf-input').value = '';
+  document.getElementById('mus-pdf-clear').style.display = 'none';
+}
+
+function verPdf(id) {
+  const m = state.musicas.find(x => x.id === id);
+  if (!m || !m.pdf) return;
+  let d = document.getElementById('modal-pdf-view');
+  if (d) d.remove();
+  d = document.createElement('div');
+  d.className = 'modal-overlay';
+  d.id = 'modal-pdf-view';
+  d.style.cssText = 'z-index:3000;align-items:flex-start;padding:20px';
+  d.innerHTML = `<div style="background:#fff;border-radius:12px;width:100%;max-width:800px;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)">
+      <span style="font-weight:700">${m.titulo}${m.artista ? ' — '+m.artista : ''}</span>
+      <button class="close-btn" onclick="document.getElementById('modal-pdf-view').classList.remove('open')">×</button>
+    </div>
+    <iframe src="${m.pdf}" style="width:100%;height:80vh;border:none"></iframe>
+  </div>`;
+  document.body.appendChild(d);
   d.classList.add('open');
 }
 
@@ -3802,6 +3916,7 @@ function openModalMusica() {
   document.getElementById('mus-spotify').value = '';
   document.getElementById('mus-cifra').value = '';
   document.getElementById('mus-obs').value = '';
+  clearMusPdf();
   document.getElementById('modal-musica-title').textContent = 'Nova Música';
   openModal('modal-musica');
 }
@@ -3818,6 +3933,14 @@ function editMusica(id) {
   document.getElementById('mus-spotify').value = m.spotify || '';
   document.getElementById('mus-cifra').value = m.cifra || '';
   document.getElementById('mus-obs').value = m.obs || '';
+  // PDF
+  if (m.pdf) {
+    document.getElementById('mus-pdf-data').value = m.pdf;
+    document.getElementById('mus-pdf-nome').textContent = 'PDF salvo';
+    document.getElementById('mus-pdf-clear').style.display = '';
+  } else {
+    clearMusPdf();
+  }
   document.getElementById('modal-musica-title').textContent = 'Editar Música';
   openModal('modal-musica');
 }
@@ -3835,6 +3958,7 @@ function saveMusica() {
     spotify: document.getElementById('mus-spotify').value.trim(),
     cifra: document.getElementById('mus-cifra').value,
     obs: document.getElementById('mus-obs').value.trim(),
+    pdf: document.getElementById('mus-pdf-data').value || null,
   };
   if (id) {
     const i = state.musicas.findIndex(x => x.id === id);
