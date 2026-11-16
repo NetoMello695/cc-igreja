@@ -1761,6 +1761,8 @@
 
 <script>
 // ========== STATE ==========
+const nomeIgreja = 'CC-Campo do Coelho';
+
 let state = {
   members: [],
   ministerios: [],
@@ -3574,7 +3576,7 @@ function abrirPDF() {
 
   // Agrupa escalas por ministério, depois por data
   const hoje = new Date();
-  const nomeIgreja = 'CC-Campo do Coelho'; // pode customizar
+  // nomeIgreja é global
 
   // Coleta todos os ministérios que têm escalas
   const ministeriosComEscala = state.ministerios.filter(min =>
