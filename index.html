@@ -804,7 +804,7 @@
         <div class="page-title">Dashboard</div>
         <div class="page-subtitle" id="dash-date"></div>
       </div>
-      <button class="btn btn-primary" onclick="openModal('modal-member')">+ Novo Membro</button>
+      <button class="btn btn-primary" onclick="novoMembro()">+ Novo Membro</button>
     </div>
     <div class="stats-grid">
       <div class="stat-card">
@@ -887,7 +887,7 @@
         <div class="page-title">Membros</div>
         <div class="page-subtitle">Gerencie todos os membros da igreja</div>
       </div>
-      <button class="btn btn-primary" onclick="openModal('modal-member')">+ Adicionar Membro</button>
+      <button class="btn btn-primary" onclick="novoMembro()">+ Adicionar Membro</button>
     </div>
     <div class="panel">
       <div class="panel-header">
@@ -2151,6 +2151,21 @@ function renderMembers() {
       </td>
     </tr>`;
   }).join('') : `<tr><td colspan="6"><div class="empty-state"><div>Nenhum membro encontrado</div></div></td></tr>`;
+}
+
+function novoMembro() {
+  document.getElementById('modal-member-title').textContent = 'Novo Membro';
+  document.getElementById('m-id').value = '';
+  document.getElementById('m-nome').value = '';
+  document.getElementById('m-apelido').value = '';
+  document.getElementById('m-tel').value = '';
+  document.getElementById('m-email').value = '';
+  document.getElementById('m-aniv').value = '';
+  document.getElementById('m-end').value = '';
+  document.getElementById('m-status').value = 'ativo';
+  document.getElementById('m-obs').value = '';
+  populateMemberSelects([]);
+  openModal('modal-member');
 }
 
 function editMember(id) {
