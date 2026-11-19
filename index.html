@@ -1041,7 +1041,7 @@
         <select id="fin-mes-sel" onchange="renderFinanceiro()" style="padding:8px 12px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-size:.88rem"></select>
         <button class="btn btn-outline" onclick="exportarFinanceiroCSV()" title="Baixar CSV">Exportar CSV</button>
         <button class="btn btn-outline" onclick="exportarFinanceiroPDF()" style="color:var(--coral);border-color:var(--coral)" title="Imprimir PDF">Exportar PDF</button>
-        <button class="btn btn-outline" onclick="openModal('modal-conta')">Nova Conta</button>
+        <button class="btn btn-outline" onclick="novaConta()">Nova Conta</button>
         <button class="btn btn-primary" onclick="openModal('modal-transacao')">+ Lançamento</button>
       </div>
     </div>
@@ -1087,7 +1087,7 @@
         <div class="panel" style="margin-bottom:16px">
           <div class="panel-header">
             <div class="panel-title">Contas</div>
-            <button class="btn btn-sm btn-outline" onclick="openModal('modal-conta')">+ Nova</button>
+            <button class="btn btn-sm btn-outline" onclick="novaConta()">+ Nova</button>
           </div>
           <div id="fin-contas-list"></div>
           <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
@@ -3126,16 +3126,33 @@ function deleteTx(id) {
   save(); renderFinanceiro(); toast('Lançamento removido','info');
 }
 
+function novaConta() {
+  document.getElementById('conta-id').value = '';
+  document.getElementById('conta-nome').value = '';
+  document.getElementById('conta-tipo').value = 'caixa';
+  document.getElementById('conta-saldo').value = '';
+  openModal('modal-conta');
+}
+
 function saveConta() {
   const nome = document.getElementById('conta-nome').value.trim();
   if (!nome) { toast('Informe o nome da conta','error'); return; }
-  if (!state.financeiro) state.financeiro = { contas:[], transacoes:[] };
-  state.financeiro.contas.push({
-    id: uid(), nome,
+  if (!state.financeiro || typeof state.financeiro !== 'object') state.financeiro = { contas:[], transacoes:[] };
+  if (!Array.isArray(state.financeiro.contas)) state.financeiro.contas = [];
+  if (!Array.isArray(state.financeiro.transacoes)) state.financeiro.transacoes = [];
+  const id = document.getElementById('conta-id').value;
+  const dados = {
+    nome,
     tipo:         document.getElementById('conta-tipo').value,
     saldoInicial: parseFloat(document.getElementById('conta-saldo').value)||0,
-  });
-  save(); closeModal('modal-conta'); renderFinanceiro(); toast('Conta criada!','success');
+  };
+  if (id) {
+    const i = state.financeiro.contas.findIndex(c => c.id === id);
+    if (i >= 0) state.financeiro.contas[i] = { ...state.financeiro.contas[i], ...dados };
+  } else {
+    state.financeiro.contas.push({ id: uid(), ...dados });
+  }
+  save(); closeModal('modal-conta'); renderFinanceiro(); toast('Conta salva!','success');
 }
 
 function deleteConta(id) {
