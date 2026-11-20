@@ -1833,6 +1833,7 @@ function poolPorRotacao(pool, dataAlvo) {
 const SB_URL = 'https://qphgtpylkrjtttfuksid.supabase.co';
 const SB_KEY = 'sb_publishable_4EkiK5lUpcfbnFtwE3ZRTw_giBtovUD';
 let _syncTimer = null;
+let _lastSaveAt = 0;
 
 function setSyncDot(status) {
   const dots = document.querySelectorAll('.sync-dot');
@@ -1885,6 +1886,7 @@ async function pullFromCloud() {
 
 function save() {
   localStorage.setItem('igreja_data', JSON.stringify(state));
+  _lastSaveAt = Date.now();
   clearTimeout(_syncTimer);
   _syncTimer = setTimeout(pushToCloud, 500);
 }
@@ -2864,7 +2866,7 @@ function populateSorteioSelects() {
 function openModal(id) {
   // pre-populate selects for certain modals
   if (id === 'modal-member') populateMemberSelects([]);
-  if (id === 'modal-ministerio') populateMinLeader();
+  if (id === 'modal-ministerio') { document.getElementById('min-id').value = ''; document.getElementById('min-nome').value = ''; document.getElementById('min-icon').value = ''; document.getElementById('min-cor').value = 'green'; document.getElementById('min-desc').value = ''; populateMinLeader(); }
   if (id === 'modal-escala') { populateEscalaSelects(); resetEscalaForm(); }
   if (id === 'modal-visita') populateVisitaSelects();
   if (id === 'modal-atendimento') populateAtendSelects();
@@ -5155,6 +5157,8 @@ function deleteUsuario(id) {
 // Re-sincroniza quando a aba volta ao foco
 document.addEventListener('visibilitychange', async () => {
   if (!document.hidden) {
+    // Não puxa da nuvem se houve um save nos últimos 5 segundos (evita sobrescrever dados locais)
+    if (Date.now() - _lastSaveAt < 5000) return;
     const cloudState = await pullFromCloud();
     if (cloudState) {
       state = cloudState;
