@@ -3355,12 +3355,15 @@ function populateTxSelects() {
   const ms = document.getElementById('tx-membro');
   ms.innerHTML = '<option value="">Não identificado</option>' +
     state.members.filter(m=>m.status!=='inativo').map(m=>`<option value="${m.id}">${m.nome}</option>`).join('');
-  // data padrão hoje
+  // sempre reseta o formulário ao abrir
   const td = document.getElementById('tx-data');
-  if (!td.value) td.value = new Date().toISOString().slice(0,10);
-  // mês ref padrão = mês atual
+  td.value = new Date().toISOString().slice(0,10);
+  document.getElementById('tx-valor').value = '';
+  document.getElementById('tx-desc').value = '';
+  document.getElementById('tx-obs').value = '';
+  document.getElementById('tx-membro').value = '';
   const mr = document.getElementById('tx-mes-ref');
-  if (mr && !mr.value) mr.value = new Date().toISOString().slice(0,7);
+  if (mr) mr.value = new Date().toISOString().slice(0,7);
   // tipo padrão
   setTxTipo('entrada');
 }
