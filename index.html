@@ -1834,6 +1834,7 @@ const SB_URL = 'https://qphgtpylkrjtttfuksid.supabase.co';
 const SB_KEY = 'sb_publishable_4EkiK5lUpcfbnFtwE3ZRTw_giBtovUD';
 let _syncTimer = null;
 let _lastSaveAt = 0;
+let _localDirty = false;
 
 function setSyncDot(status) {
   const dots = document.querySelectorAll('.sync-dot');
@@ -1859,6 +1860,7 @@ async function pushToCloud() {
     });
     if (!res.ok) throw new Error(await res.text());
     setSyncDot('ok');
+    _localDirty = false;
   } catch(e) {
     console.warn('Sync error:', e);
     setSyncDot('error');
@@ -1887,6 +1889,7 @@ async function pullFromCloud() {
 function save() {
   localStorage.setItem('igreja_data', JSON.stringify(state));
   _lastSaveAt = Date.now();
+  _localDirty = true;
   clearTimeout(_syncTimer);
   _syncTimer = setTimeout(pushToCloud, 500);
 }
@@ -5167,7 +5170,8 @@ function deleteUsuario(id) {
 // Re-sincroniza quando a aba volta ao foco
 document.addEventListener('visibilitychange', async () => {
   if (!document.hidden) {
-    // Não puxa da nuvem se houve um save nos últimos 5 segundos (evita sobrescrever dados locais)
+    // Não puxa se há alterações locais ainda não confirmadas pelo servidor
+    if (_localDirty) return;
     if (Date.now() - _lastSaveAt < 5000) return;
     const cloudState = await pullFromCloud();
     if (cloudState) {
