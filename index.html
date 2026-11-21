@@ -1946,7 +1946,9 @@ function migrateState() {
   if (!state.visitas)     state.visitas = [];
   if (!state.atendimentos)state.atendimentos = [];
   if (!state.cultos)      state.cultos = [];
-  if (!state.financeiro)  state.financeiro = [];
+  if (!state.financeiro || Array.isArray(state.financeiro)) state.financeiro = { contas: [], transacoes: [] };
+  if (!Array.isArray(state.financeiro.contas))     state.financeiro.contas = [];
+  if (!Array.isArray(state.financeiro.transacoes)) state.financeiro.transacoes = [];
   if (!state.usuarios.length) {
     state.usuarios.push({
       id: 'admin-master', nome: 'Administrador', usuario: 'admin',
@@ -2902,8 +2904,10 @@ function fmtDate(d) {
 
 // ========== FINANCEIRO ==========
 const FIN_CATS = {
-  entrada: ['Oferta','Dízimo','Doação','Aluguel','Evento','Outros'],
-  saida:   ['Aluguel','Água / Luz','Materiais','Evento','Salário','Manutenção','Comunicação','Outros'],
+  entrada: ['Oferta','Dízimo','Doação','Aluguel','Evento','Venda','Restituição','Outros'],
+  saida:   ['Aluguel','Água / Luz','Internet / Telefone','Materiais de Limpeza','Materiais de Escritório',
+            'Alimentação','Evento','Salário / Honorários','Manutenção','Equipamentos','Transporte',
+            'Comunicação / Marketing','Missões','Dízimo Repasse','Outros'],
   dizimo:  ['Dízimo'],
 };
 const CAT_ICONS = {
@@ -3106,7 +3110,8 @@ function saveTransacao() {
   const desc  = document.getElementById('tx-desc').value.trim();
   const data  = document.getElementById('tx-data').value;
   if (!valor || !desc || !data) { toast('Preencha valor, descrição e data', 'error'); return; }
-  if (!state.financeiro) state.financeiro = { contas:[], transacoes:[] };
+  if (!state.financeiro || Array.isArray(state.financeiro)) state.financeiro = { contas:[], transacoes:[] };
+  if (!Array.isArray(state.financeiro.transacoes)) state.financeiro.transacoes = [];
   const tx = {
     id: uid(), tipo: txTipo, valor, desc, data,
     cat:    document.getElementById('tx-cat').value,
@@ -3366,8 +3371,10 @@ function fmtMoney(v) {
 
 // seed financeiro demo
 function seedFinanceiro() {
-  if (!state.financeiro) state.financeiro = { contas:[], transacoes:[] };
-  if (state.financeiro.contas.length) return;
+  if (!state.financeiro || Array.isArray(state.financeiro)) state.financeiro = { contas:[], transacoes:[] };
+  if (!Array.isArray(state.financeiro.contas)) state.financeiro.contas = [];
+  if (!Array.isArray(state.financeiro.transacoes)) state.financeiro.transacoes = [];
+  if (state.financeiro.contas.length) return; // já tem contas, não recria
   const cId1 = uid(), cId2 = uid();
   state.financeiro.contas = [
     { id: cId1, nome: 'Caixa Geral',     tipo: 'caixa',    saldoInicial: 500 },
